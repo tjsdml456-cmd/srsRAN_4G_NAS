@@ -2468,6 +2468,10 @@ public:
 class qo_s_flow_descriptions_t
 {
 public:
+  /// When non-empty, pack()/unpack() use these octets as the IE value (after the 16-bit length field).
+  /// This bypasses the legacy stub encoder so UE-initiated QoS flow descriptions can be sent.
+  std::vector<uint8_t> encoded_value;  
+	
   SRSASN_CODE pack(asn1::bit_ref& bref);
   SRSASN_CODE unpack(asn1::cbit_ref& bref);
 

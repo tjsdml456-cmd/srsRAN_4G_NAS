@@ -1,0 +1,151 @@
+Performing C++ SOURCE FILE Test UHD_ENABLE_X300_FW_RESET failed with the following output:
+Change Dir: /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_12ba1/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_12ba1.dir/build.make CMakeFiles/cmTC_12ba1.dir/build
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 들어감
+Building CXX object CMakeFiles/cmTC_12ba1.dir/src.cxx.o
+/usr/bin/c++ -DUHD_ENABLE_X300_FW_RESET  -L/usr/local/lib -o CMakeFiles/cmTC_12ba1.dir/src.cxx.o -c /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_12ba1
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_12ba1.dir/link.txt --verbose=1
+/usr/bin/c++   -L/usr/local/lib CMakeFiles/cmTC_12ba1.dir/src.cxx.o -o cmTC_12ba1  -luhd -lboost_program_options -lboost_system 
+/usr/bin/ld: CMakeFiles/cmTC_12ba1.dir/src.cxx.o: in function `try_usrp_x300_reset()':
+src.cxx:(.text+0xdf): undefined reference to `x300_make_ctrl_iface_enet(std::shared_ptr<uhd::transport::udp_simple>, bool)'
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_12ba1.dir/build.make:99: cmTC_12ba1] 오류 1
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 나감
+gmake: *** [Makefile:127: cmTC_12ba1/fast] 오류 2
+
+
+Source file was:
+#include <uhd.h>
+    #include <uhd/usrp/multi_usrp.hpp>
+    #include <uhd/transport/udp_simple.hpp>
+
+    uhd::wb_iface::sptr x300_make_ctrl_iface_enet(uhd::transport::udp_simple::sptr udp, bool enable_errors);
+
+    uhd_error try_usrp_x300_reset()
+    {
+      uhd::transport::udp_simple::sptr udp_simple = uhd::transport::udp_simple::make_connected("", "49152");
+      uhd::wb_iface::sptr x300_ctrl = x300_make_ctrl_iface_enet(udp_simple, true);
+      x300_ctrl->poke32(0x100058, 1);
+      return UHD_ERROR_NONE;
+    }
+
+    int main(int argc, char** argv)
+    {
+      try_usrp_x300_reset();
+      return 0;
+    }
+Performing C++ SOURCE FILE Test UHD_ENABLE_RFNOC failed with the following output:
+Change Dir: /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_ba41b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_ba41b.dir/build.make CMakeFiles/cmTC_ba41b.dir/build
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 들어감
+Building CXX object CMakeFiles/cmTC_ba41b.dir/src.cxx.o
+/usr/bin/c++ -DUHD_ENABLE_RFNOC  -L/usr/local/lib -o CMakeFiles/cmTC_ba41b.dir/src.cxx.o -c /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.cxx
+/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.cxx:2:14: fatal error: uhd/device3.hpp: 그런 파일이나 디렉터리가 없습니다
+    2 |     #include <uhd/device3.hpp>
+      |              ^~~~~~~~~~~~~~~~~
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_ba41b.dir/build.make:78: CMakeFiles/cmTC_ba41b.dir/src.cxx.o] 오류 1
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 나감
+gmake: *** [Makefile:127: cmTC_ba41b/fast] 오류 2
+
+
+Source file was:
+#include <uhd.h>
+    #include <uhd/device3.hpp>
+    #include <uhd/rfnoc/ddc_block_ctrl.hpp>
+    #include <uhd/rfnoc/radio_ctrl.hpp>
+
+    static uhd::device3::sptr device3;
+    static uhd::rfnoc::ddc_block_ctrl::sptr ddc_ctrl;
+    static uhd::rfnoc::radio_ctrl::sptr radio_ctrl;
+
+    uhd_error try_device3_ddc_ctrl()
+    {
+      ddc_ctrl = device3->get_block_ctrl<uhd::rfnoc::ddc_block_ctrl>(uhd::rfnoc::block_id_t("DDC_0"));
+      return UHD_ERROR_NONE;
+    }
+
+    uhd_error try_device3_radio_ctrl()
+    {
+      radio_ctrl = device3->get_block_ctrl<uhd::rfnoc::radio_ctrl>(uhd::rfnoc::block_id_t("Radio_0"));
+      return UHD_ERROR_NONE;
+    }
+
+    int main(int argc, char** argv)
+    {
+      try_device3_ddc_ctrl();
+      try_device3_radio_ctrl();
+      return 0;
+    }
+Performing C++ SOURCE FILE Test UHD_ENABLE_CUSTOM_RFNOC failed with the following output:
+Change Dir: /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_83bb6/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_83bb6.dir/build.make CMakeFiles/cmTC_83bb6.dir/build
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 들어감
+Building CXX object CMakeFiles/cmTC_83bb6.dir/src.cxx.o
+/usr/bin/c++ -DUHD_ENABLE_CUSTOM_RFNOC  -L/usr/local/lib -o CMakeFiles/cmTC_83bb6.dir/src.cxx.o -c /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.cxx
+/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.cxx:2:14: fatal error: uhd/device3.hpp: 그런 파일이나 디렉터리가 없습니다
+    2 |     #include <uhd/device3.hpp>
+      |              ^~~~~~~~~~~~~~~~~
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_83bb6.dir/build.make:78: CMakeFiles/cmTC_83bb6.dir/src.cxx.o] 오류 1
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 나감
+gmake: *** [Makefile:127: cmTC_83bb6/fast] 오류 2
+
+
+Source file was:
+#include <uhd.h>
+    #include <uhd/device3.hpp>
+    #include <uhd/rfnoc/ddc_ch2_block_ctrl.hpp>
+
+    static uhd::device3::sptr device3;
+    static uhd::rfnoc::ddc_ch2_block_ctrl::sptr ddc_ctrl;
+
+    uhd_error try_device3_ddc_ch2_ctrl()
+    {
+      ddc_ctrl = device3->get_block_ctrl<uhd::rfnoc::ddc_ch2_block_ctrl>(uhd::rfnoc::block_id_t("DDCch2_0"));
+      return UHD_ERROR_NONE;
+    }
+
+    int main(int argc, char** argv)
+    {
+      try_device3_ddc_ch2_ctrl();
+      return 0;
+    }
+Performing C SOURCE FILE Test HAVE_AVX512 failed with the following output:
+Change Dir: /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_c8cf8/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c8cf8.dir/build.make CMakeFiles/cmTC_c8cf8.dir/build
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 들어감
+Building C object CMakeFiles/cmTC_c8cf8.dir/src.c.o
+/usr/bin/cc   -DHAVE_AVX512 -mavx512f -mavx512cd -mavx512bw -mavx512dq -DLV_HAVE_AVX512 -o CMakeFiles/cmTC_c8cf8.dir/src.c.o -c /home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_c8cf8
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c8cf8.dir/link.txt --verbose=1
+/usr/bin/cc  -DHAVE_AVX512 -mavx512f -mavx512cd -mavx512bw -mavx512dq -DLV_HAVE_AVX512 CMakeFiles/cmTC_c8cf8.dir/src.c.o -o cmTC_c8cf8 
+gmake[1]: 디렉터리 '/home/user/srsRAN_main/srsRAN_4G/build/CMakeFiles/CMakeTmp' 나감
+
+
+Return value: FAILED_TO_RUN
+Source file was:
+
+          #include <immintrin.h>
+          int main()
+          {
+            __m512i a, b, c;
+            const int src[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 , 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
+            int dst[16];
+            a =  _mm512_loadu_si512( (__m512i*)src );
+            b =  _mm512_loadu_si512( (__m512i*)src );
+            c = _mm512_add_epi32( a, b );
+            _mm512_storeu_si512( (__m512i*)dst, c );
+            int i = 0;
+            for( i = 0; i < 16; i++ ){
+              if( ( src[i] + src[i] ) != dst[i] ){
+                return -1;
+              }
+            }
+            return 0;
+          }

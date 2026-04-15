@@ -31,8 +31,10 @@
 #include "srsran/interfaces/ue_usim_interfaces.h"
 #include "srsue/hdr/stack/upper/nas_5g_procedures.h"
 
+#include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <vector>
 #include <unistd.h>
 
 #define MAC_5G_OFFSET 2
@@ -43,6 +45,101 @@ using namespace srsran;
 using namespace srsran::nas_5g;
 
 namespace srsue {
+
+namespace {
+
+// QoS flow description — "modify existing QoS flow description" (TS 24.501)
+constexpr uint8_t k_qos_op_modify_existing = 3;
+// QoS flow description parameters (aligned with 3GPP / Open5GS encodings)
+constexpr uint8_t k_param_5qi     = 1;
+constexpr uint8_t k_param_gfbr_ul = 2;
+constexpr uint8_t k_param_gfbr_dl = 3;
+constexpr uint8_t k_param_mfbr_ul = 4;
+constexpr uint8_t k_param_mfbr_dl = 5;
+constexpr uint8_t k_nas_br_unit_1k  = 1;
+constexpr uint8_t k_nas_br_max_unit = 25;
+
+void nas_br_from_bps(uint64_t bitrate_bps, uint8_t* unit, uint16_t* value)
+{
+  uint64_t kbps = bitrate_bps / 1000;
+  if (kbps == 0) {
+    *unit  = k_nas_br_unit_1k;
+    *value = 0;
+    return;
+  }
+  *unit = k_nas_br_unit_1k;
+  while (*unit < k_nas_br_max_unit && kbps > 0xFFFFUL) {
+    kbps >>= 2U;
+    (*unit)++;
+  }
+  *value = static_cast<uint16_t>(kbps);
+}
+
+void append_br_param(std::vector<uint8_t>& out, uint8_t param_id, uint64_t bps)
+{
+  if (bps == 0) {
+    return;
+  }
+  uint8_t  u = 0;
+  uint16_t v = 0;
+  nas_br_from_bps(bps, &u, &v);
+  out.push_back(param_id);
+  out.push_back(3);
+  out.push_back(u);
+  out.push_back(static_cast<uint8_t>((v >> 8) & 0xff));
+  out.push_back(static_cast<uint8_t>(v & 0xff));
+}
+
+bool build_modify_qos_flow_descriptions(std::vector<uint8_t>& out,
+                                        uint8_t                qfi,
+                                        uint8_t                five_qi,
+                                        uint64_t              gbr_dl,
+                                        uint64_t              gbr_ul,
+                                        uint64_t              mbr_dl,
+                                        uint64_t              mbr_ul)
+{
+  if (gbr_dl > 0 && mbr_dl == 0) {
+    mbr_dl = gbr_dl;
+  }
+  if (gbr_ul > 0 && mbr_ul == 0) {
+    mbr_ul = gbr_ul;
+  }
+
+  uint8_t num_params = 1;
+  if (gbr_ul > 0) {
+    num_params++;
+  }
+  if (gbr_dl > 0) {
+    num_params++;
+  }
+  if (mbr_ul > 0) {
+    num_params++;
+  }
+  if (mbr_dl > 0) {
+    num_params++;
+  }
+
+  const uint8_t b0 = static_cast<uint8_t>(qfi & 0x3FU);
+  const uint8_t b1 = static_cast<uint8_t>((k_qos_op_modify_existing & 0x07U) << 5);
+  const uint8_t b2 = static_cast<uint8_t>((num_params & 0x3FU) | (1U << 6)); // E=1: replace parameters
+
+  out.push_back(b0);
+  out.push_back(b1);
+  out.push_back(b2);
+
+  out.push_back(k_param_5qi);
+  out.push_back(1);
+  out.push_back(five_qi);
+
+  append_br_param(out, k_param_gfbr_ul, gbr_ul);
+  append_br_param(out, k_param_gfbr_dl, gbr_dl);
+  append_br_param(out, k_param_mfbr_ul, mbr_ul);
+  append_br_param(out, k_param_mfbr_dl, mbr_dl);
+
+  return out.size() >= 6;
+}
+
+} // namespace
 
 /*********************************************************************
  *   NAS 5G (NR)
@@ -509,22 +606,21 @@ int nas_5g::send_authentication_failure(const cause_5gmm_t::cause_5gmm_type_::op
 
 uint32_t nas_5g::allocate_next_proc_trans_id()
 {
-  uint32_t i = 0;
-  for (auto pdu_trans_id : pdu_trans_ids) {
-    i++;
-    if (pdu_trans_id == false) {
-      pdu_trans_id = true;
-      break;
+  for (uint32_t k = 0; k < pdu_trans_ids.size(); k++) {
+    if (pdu_trans_ids[k] == false) {
+      pdu_trans_ids[k] = true;
+      return k + 1U;
     }
   }
-  // TODO if Trans ID exhausted
-  return i;
+  logger.error("PDU session procedure transaction ID pool exhausted");
+  return 1;
 }
 
 void nas_5g::release_proc_trans_id(uint32_t proc_id)
 {
-  if (proc_id < MAX_TRANS_ID) {
-    pdu_trans_ids[proc_id] = false;
+  // Transaction identities used on the wire are 1..MAX_TRANS_ID; pool is 0-based.
+  if (proc_id >= 1 && proc_id <= pdu_trans_ids.size()) {
+    pdu_trans_ids[proc_id - 1U] = false;
   }
   return;
 }
@@ -623,6 +719,133 @@ int nas_5g::send_pdu_session_establishment_request(uint32_t                 tran
                      &pdu->msg[MAC_5G_OFFSET]);
 
   logger.info("Sending PDU Session Establishment Request in UL NAS transport.");
+  rrc_nr->write_sdu(std::move(pdu));
+  ctxt_base.tx_count++;
+
+  return SRSRAN_SUCCESS;
+}
+
+int nas_5g::send_pdu_session_modification_request(uint16_t pdu_session_id,
+                                                  uint8_t  qos_flow_id,
+                                                  uint8_t  five_qi,
+                                                  uint64_t gbr_dl_bps,
+                                                  uint64_t gbr_ul_bps,
+                                                  uint64_t mbr_dl_bps,
+                                                  uint64_t mbr_ul_bps)
+{
+  if (rrc_nr == nullptr) {
+    logger.error("RRC not initialized");
+    return SRSRAN_ERROR;
+  }
+  if (not has_sec_ctxt) {
+    logger.error("No NAS security context; cannot send PDU Session Modification Request");
+    return SRSRAN_ERROR;
+  }
+
+  const pdu_session_cfg_t* pdu_cfg = nullptr;
+  for (const auto& s : pdu_sessions) {
+    // Some deployments establish the session via network-triggered defaults while
+    // `configured` remains false in the local table. For UE-triggered QoS modify,
+    // rely on runtime establishment state + PSI match.
+    if (s.established && s.pdu_session_id == pdu_session_id) {
+      pdu_cfg = &s.pdu_session_cfg;
+      break;
+    }
+  }
+  if (pdu_cfg == nullptr) {
+    logger.error("PDU session id=%u is not established locally; refusing modification request",
+                 static_cast<unsigned>(pdu_session_id));
+    for (const auto& s : pdu_sessions) {
+      logger.info("PDU session table entry: psi=%u configured=%d established=%d apn_len=%zu",
+                  static_cast<unsigned>(s.pdu_session_id),
+                  static_cast<int>(s.configured),
+                  static_cast<int>(s.established),
+                  s.pdu_session_cfg.apn_name.size());
+    }
+    return SRSRAN_ERROR;
+  }
+  if (pdu_cfg->apn_name.empty()) {
+    logger.error("PDU session id=%u has empty DNN/APN; cannot build UL NAS transport",
+                 static_cast<unsigned>(pdu_session_id));
+    return SRSRAN_ERROR;
+  }
+
+  std::vector<uint8_t> qos_desc;
+  if (not build_modify_qos_flow_descriptions(
+          qos_desc, qos_flow_id, five_qi, gbr_dl_bps, gbr_ul_bps, mbr_dl_bps, mbr_ul_bps)) {
+    logger.error("Building QoS flow descriptions failed");
+    return SRSRAN_ERROR;
+  }
+
+  unique_byte_buffer_t pdu = srsran::make_byte_buffer();
+  if (!pdu) {
+    logger.error("Couldn't allocate PDU in %s().", __FUNCTION__);
+    return SRSRAN_ERROR;
+  }
+
+  const uint32_t transaction_identity = allocate_next_proc_trans_id();
+
+  nas_5gs_msg nas_msg;
+  nas_msg.hdr.pdu_session_identity           = pdu_session_id;
+  nas_msg.hdr.procedure_transaction_identity = transaction_identity;
+  nas_msg.hdr.sequence_number                = ctxt_base.tx_count;
+
+  pdu_session_modification_request_t& req = nas_msg.set_pdu_session_modification_request();
+  req.requested__qo_s_flow_descriptions_present       = true;
+  req.requested__qo_s_flow_descriptions.encoded_value = std::move(qos_desc);
+
+  nas_5gs_msg env_nas_msg;
+  env_nas_msg.hdr.security_header_type = nas_5gs_hdr::security_header_type_opts::integrity_protected_and_ciphered;
+  env_nas_msg.hdr.sequence_number      = ctxt_base.tx_count;
+
+  ul_nas_transport_t& ul_nas_msg = env_nas_msg.set_ul_nas_transport();
+  ul_nas_msg.payload_container_type.payload_container_type.value =
+      payload_container_type_t::Payload_container_type_type_::options::n1_sm_information;
+
+  if (nas_msg.pack(ul_nas_msg.payload_container.payload_container_contents) != SRSASN_SUCCESS) {
+    logger.error("Failed to pack PDU Session Modification Request.");
+    release_proc_trans_id(transaction_identity);
+    return SRSRAN_ERROR;
+  }
+
+  ul_nas_msg.pdu_session_id_present                      = true;
+  ul_nas_msg.pdu_session_id.pdu_session_identity_2_value = pdu_session_id;
+
+  ul_nas_msg.request_type_present = true;
+  ul_nas_msg.request_type.request_type_value =
+      request_type_t::Request_type_value_type_::options::modification_request;
+
+  if (cfg.enable_slicing) {
+    ul_nas_msg.s_nssai_present = true;
+    set_nssai(ul_nas_msg.s_nssai);
+  }
+  ul_nas_msg.dnn_present = true;
+  ul_nas_msg.dnn.dnn_value.resize(pdu_cfg->apn_name.size() + 1);
+  ul_nas_msg.dnn.dnn_value.data()[0] = static_cast<uint8_t>(pdu_cfg->apn_name.size());
+  memcpy(ul_nas_msg.dnn.dnn_value.data() + 1, pdu_cfg->apn_name.data(), pdu_cfg->apn_name.size());
+
+  if (env_nas_msg.pack(pdu) != SRSASN_SUCCESS) {
+    logger.error("Failed to pack UL NAS transport (PDU Session Modification).");
+    release_proc_trans_id(transaction_identity);
+    return SRSRAN_ERROR;
+  }
+
+  if (pcap != nullptr) {
+    pcap->write_nas(pdu.get()->msg, pdu.get()->N_bytes);
+  }
+
+  cipher_encrypt(pdu.get());
+  integrity_generate(&ctxt_base.k_nas_int[16],
+                     ctxt_base.tx_count,
+                     SECURITY_DIRECTION_UPLINK,
+                     &pdu->msg[SEQ_5G_OFFSET],
+                     pdu->N_bytes - SEQ_5G_OFFSET,
+                     &pdu->msg[MAC_5G_OFFSET]);
+
+  logger.info("Sending PDU Session Modification Request in UL NAS transport (PSI=%u, QFI=%u, 5QI=%u).",
+              static_cast<unsigned>(pdu_session_id),
+              static_cast<unsigned>(qos_flow_id),
+              static_cast<unsigned>(five_qi));
   rrc_nr->write_sdu(std::move(pdu));
   ctxt_base.tx_count++;
 
@@ -1117,7 +1340,7 @@ int nas_5g::start_service_request()
 
 int nas_5g::reset_pdu_sessions()
 {
-  for (auto pdu_session : pdu_sessions) {
+  for (auto& pdu_session : pdu_sessions) {
     pdu_session.established    = false;
     pdu_session.pdu_session_id = 0;
   }
@@ -1256,10 +1479,14 @@ int nas_5g::trigger_pdu_session_est()
 int nas_5g::init_pdu_sessions(std::vector<pdu_session_cfg_t> pdu_session_cfgs)
 {
   uint16_t i = 0;
-  for (auto pdu_session_cfg : pdu_session_cfgs) {
+  for (const auto& pdu_session_cfg : pdu_session_cfgs) {
+    if (i >= pdu_sessions.size()) {
+      break;
+    }
     pdu_sessions[i].configured      = true;
     pdu_sessions[i].pdu_session_id  = i + 1;
     pdu_sessions[i].pdu_session_cfg = pdu_session_cfg;
+    i++;
   }
   return SRSRAN_SUCCESS;
 }
@@ -1277,17 +1504,20 @@ uint32_t nas_5g::num_of_est_pdu_sessions()
 
 int nas_5g::configure_pdu_session(uint16_t pdu_session_id)
 {
-  for (auto pdu_session : pdu_sessions) {
+  for (auto& pdu_session : pdu_sessions) {
     if (pdu_session.pdu_session_id == pdu_session_id) {
       pdu_session.established = true;
+      return SRSRAN_SUCCESS;
     }
   }
+  logger.warning("Could not mark PDU session id=%u as established (not found in local table)",
+                 static_cast<unsigned>(pdu_session_id));
   return SRSRAN_SUCCESS;
 }
 
 bool nas_5g::unestablished_pdu_sessions()
 {
-  for (auto pdu_session : pdu_sessions) {
+  for (const auto& pdu_session : pdu_sessions) {
     if (pdu_session.configured == true && pdu_session.established == false) {
       return true;
     }
@@ -1297,12 +1527,14 @@ bool nas_5g::unestablished_pdu_sessions()
 
 int nas_5g::get_unestablished_pdu_session(uint16_t& pdu_session_id, pdu_session_cfg_t& pdu_session_cfg)
 {
-  for (auto pdu_session : pdu_sessions) {
+  for (const auto& pdu_session : pdu_sessions) {
     if (pdu_session.configured == true && pdu_session.established == false) {
       pdu_session_id  = pdu_session.pdu_session_id;
       pdu_session_cfg = pdu_session.pdu_session_cfg;
+      return SRSRAN_SUCCESS;
     }
   }
+  logger.warning("No unestablished configured PDU session found");
   return SRSRAN_SUCCESS;
 }
 
@@ -1372,7 +1604,49 @@ int nas_5g::add_pdu_session(uint16_t                      pdu_session_id,
                     pdu_address.ipv6.data()[7]);
   }
 
+  // Keep local PDU session table in sync with successful establishment.
+  bool table_updated = false;
+  for (auto& pdu_session : pdu_sessions) {
+    if (pdu_session.pdu_session_id == pdu_session_id) {
+      pdu_session.established = true;
+      pdu_session.configured  = true;
+      table_updated           = true;
+      break;
+    }
+  }
+
+  // Fallback for deployments where the session table was not pre-populated.
+  if (!table_updated) {
+    for (auto& pdu_session : pdu_sessions) {
+      if (!pdu_session.configured && !pdu_session.established && pdu_session.pdu_session_id == 0) {
+        pdu_session.pdu_session_id = pdu_session_id;
+        pdu_session.configured     = true;
+        pdu_session.established    = true;
+
+        // Best-effort DNN/APN seed for later UL NAS Transport (modify request).
+        if (!cfg.pdu_session_cfgs.empty()) {
+          size_t idx = (pdu_session_id > 0) ? static_cast<size_t>(pdu_session_id - 1) : 0;
+          if (idx < cfg.pdu_session_cfgs.size()) {
+            pdu_session.pdu_session_cfg = cfg.pdu_session_cfgs[idx];
+          } else {
+            pdu_session.pdu_session_cfg = cfg.pdu_session_cfgs.front();
+          }
+        }
+        table_updated = true;
+        logger.warning("Inserted missing local PDU session table entry for psi=%u after successful establishment",
+                       static_cast<unsigned>(pdu_session_id));
+        break;
+      }
+    }
+  }
+
+  if (!table_updated) {
+    logger.warning("PDU session establishment succeeded but local table update failed for psi=%u",
+                   static_cast<unsigned>(pdu_session_id));
+  }
+
   return SRSRAN_SUCCESS;
 }
 
 } // namespace srsue
+

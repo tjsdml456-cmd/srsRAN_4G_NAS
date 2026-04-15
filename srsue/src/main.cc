@@ -160,6 +160,8 @@ static int parse_args(all_args_t* args, int argc, char* argv[])
     ("nas.force_imsi_attach", bpo::value<bool>(&args->stack.nas.force_imsi_attach)->default_value(false),  "Whether to always perform an IMSI attach")
     ("nas.eia",               bpo::value<string>(&args->stack.nas.eia)->default_value("1,2,3"),  "List of integrity algorithms included in UE capabilities")
     ("nas.eea",               bpo::value<string>(&args->stack.nas.eea)->default_value("0,1,2,3"),  "List of ciphering algorithms included in UE capabilities")
+    ("nas.5g_control_socket", bpo::value<string>(&args->stack.nas_5g.control_socket)->default_value(""),
+     "AF_UNIX SOCK_DGRAM path (Linux/macOS, 5G-SA only). Send ASCII: MODIFY <psi> <qfi> <5qi> <gbr_dl> <gbr_ul> <mbr_dl> <mbr_ul> (bps; use 0 to omit GBR/MBR)")
 
     ("slicing.enable",        bpo::value<bool>(&args->stack.nas_5g.enable_slicing)->default_value(false),  "enable slicing in the UE")
     ("slicing.nssai-sst",     bpo::value<int>(&args->stack.nas_5g.nssai_sst)->default_value(1),  "sst of requested slice")
@@ -825,3 +827,4 @@ int main(int argc, char* argv[])
 
   return SRSRAN_SUCCESS;
 }
+

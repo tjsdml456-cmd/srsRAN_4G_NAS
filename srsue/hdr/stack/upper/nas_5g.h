@@ -82,6 +82,16 @@ public:
   int disable_data();
   int start_service_request();
 
+  /// Send PDU Session Modification Request (QoS) inside UL NAS transport (N1 SM container).
+  /// The PDU session must already be established. Bitrates are in bps; use 0 to omit optional GBR/MBR IEs.
+  int send_pdu_session_modification_request(uint16_t pdu_session_id,
+                                            uint8_t  qos_flow_id,
+                                            uint8_t  five_qi,
+                                            uint64_t gbr_dl_bps,
+                                            uint64_t gbr_ul_bps,
+                                            uint64_t mbr_dl_bps,
+                                            uint64_t mbr_ul_bps);
+
   // Metrics getter
   void get_metrics(nas_5g_metrics_t& metrics);
 

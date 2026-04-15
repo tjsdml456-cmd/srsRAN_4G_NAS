@@ -26,8 +26,19 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <numeric>
 #include <thread>
+
+#if defined(AF_UNIX)
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#endif
 
 using namespace srsran;
 
@@ -252,6 +263,11 @@ int ue_stack_lte::init(const stack_args_t& args_)
 
   if (args.sa_mode) {
     nas_5g.init(usim.get(), &rrc_nr, gw, args.nas_5g);
+    if (open_nas5g_control_socket() != SRSRAN_SUCCESS) {
+      return SRSRAN_ERROR;
+    }
+  } else if (!args.nas_5g.control_socket.empty()) {
+    stack_logger.warning("nas.5g_control_socket is ignored unless sa_mode is enabled");
   }
 
   running = true;
@@ -271,6 +287,8 @@ void ue_stack_lte::stop()
 void ue_stack_lte::stop_impl()
 {
   running = false;
+
+  close_nas5g_control_socket();
 
   usim->stop();
   nas.stop();
@@ -533,6 +551,7 @@ void ue_stack_lte::run_tti_impl(uint32_t tti, uint32_t tti_jump)
   rrc_nr.run_tti(tti);
   nas.run_tti();
   nas_5g.run_tti();
+  poll_nas5g_control_socket();
 
   if (args.have_tti_time_stats) {
     std::chrono::nanoseconds dur = tti_tprof.stop();
@@ -562,4 +581,122 @@ void ue_stack_lte::cell_select_completed(const rrc_interface_phy_nr::cell_select
   cfg_task_queue.push([this, result]() { rrc_nr.cell_select_completed(result); });
 }
 
+int ue_stack_lte::open_nas5g_control_socket()
+{
+  if (!args.sa_mode || args.nas_5g.control_socket.empty()) {
+    return SRSRAN_SUCCESS;
+  }
+#if !defined(AF_UNIX)
+  stack_logger.error("nas.5g_control_socket is set but AF_UNIX is not available on this platform");
+  return SRSRAN_ERROR;
+#else
+  if (args.nas_5g.control_socket.length() >= sizeof(sockaddr_un::sun_path)) {
+    stack_logger.error("nas.5g_control_socket path is too long (max %zu bytes)",
+                       sizeof(sockaddr_un::sun_path) - 1);
+    return SRSRAN_ERROR;
+  }
+  nas5g_ctl_sock = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+  if (nas5g_ctl_sock < 0) {
+    stack_logger.error("nas.5g_control_socket: socket() failed (errno=%d)", errno);
+    return SRSRAN_ERROR;
+  }
+  ::unlink(args.nas_5g.control_socket.c_str());
+  sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
+  std::strncpy(addr.sun_path, args.nas_5g.control_socket.c_str(), sizeof(addr.sun_path) - 1);
+  const socklen_t addr_len =
+      static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + std::strlen(addr.sun_path) + 1);
+  if (::bind(nas5g_ctl_sock, reinterpret_cast<sockaddr*>(&addr), addr_len) < 0) {
+    stack_logger.error("nas.5g_control_socket: bind(%s) failed (errno=%d)", addr.sun_path, errno);
+    ::close(nas5g_ctl_sock);
+    nas5g_ctl_sock = -1;
+    return SRSRAN_ERROR;
+  }
+  const int flags = ::fcntl(nas5g_ctl_sock, F_GETFL, 0);
+  if (flags < 0 || ::fcntl(nas5g_ctl_sock, F_SETFL, flags | O_NONBLOCK) < 0) {
+    stack_logger.error("nas.5g_control_socket: fcntl(O_NONBLOCK) failed (errno=%d)", errno);
+    close_nas5g_control_socket();
+    return SRSRAN_ERROR;
+  }
+  nas5g_ctl_path = args.nas_5g.control_socket;
+  stack_logger.info("Listening for NAS 5G QoS commands on unix datagram socket %s", nas5g_ctl_path.c_str());
+  return SRSRAN_SUCCESS;
+#endif
+}
+
+void ue_stack_lte::close_nas5g_control_socket()
+{
+#if defined(AF_UNIX)
+  if (nas5g_ctl_sock >= 0) {
+    ::close(nas5g_ctl_sock);
+    nas5g_ctl_sock = -1;
+  }
+  if (!nas5g_ctl_path.empty()) {
+    ::unlink(nas5g_ctl_path.c_str());
+    nas5g_ctl_path.clear();
+  }
+#endif
+}
+
+void ue_stack_lte::poll_nas5g_control_socket()
+{
+#if defined(AF_UNIX)
+  if (nas5g_ctl_sock < 0) {
+    return;
+  }
+  char buf[1024];
+  for (;;) {
+    const ssize_t n = ::recv(nas5g_ctl_sock, buf, sizeof(buf) - 1, 0);
+    if (n < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        break;
+      }
+      stack_logger.warning("nas.5g_control_socket: recv failed (errno=%d)", errno);
+      break;
+    }
+    if (n == 0) {
+      break;
+    }
+    size_t len = static_cast<size_t>(n);
+    buf[len] = '\0';
+    while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r')) {
+      buf[len - 1] = '\0';
+      len--;
+    }
+    unsigned int       psi    = 0;
+    unsigned int       qfi    = 0;
+    unsigned int       fiveqi = 0;
+    unsigned long long gbr_dl = 0, gbr_ul = 0, mbr_dl = 0, mbr_ul = 0;
+    if (std::sscanf(buf,
+                    "MODIFY %u %u %u %llu %llu %llu %llu",
+                    &psi,
+                    &qfi,
+                    &fiveqi,
+                    &gbr_dl,
+                    &gbr_ul,
+                    &mbr_dl,
+                    &mbr_ul) != 7) {
+      nas5g_logger.warning("Ignored control datagram (expected MODIFY <psi> <qfi> <5qi> <gbr_dl> <gbr_ul> <mbr_dl> "
+                           "<mbr_ul>)");
+      continue;
+    }
+    const int ret = nas_5g.send_pdu_session_modification_request(static_cast<uint16_t>(psi),
+                                                                 static_cast<uint8_t>(qfi),
+                                                                 static_cast<uint8_t>(fiveqi),
+                                                                 static_cast<uint64_t>(gbr_dl),
+                                                                 static_cast<uint64_t>(gbr_ul),
+                                                                 static_cast<uint64_t>(mbr_dl),
+                                                                 static_cast<uint64_t>(mbr_ul));
+    if (ret != SRSRAN_SUCCESS) {
+      nas5g_logger.error("PDU Session Modification Request was not sent (see NAS5G log above)");
+    }
+  }
+#endif
+}
+
 } // namespace srsue
+

@@ -5205,7 +5205,12 @@ SRSASN_CODE qo_s_flow_descriptions_t::pack(asn1::bit_ref& bref)
   asn1::bit_ref bref_length = bref;
   HANDLE_CODE(bref.advance_bits(16));
 
-  // TODO proper packing
+  if (!encoded_value.empty()) {
+    for (uint8_t octet : encoded_value) {
+      HANDLE_CODE(bref.pack(octet, 8));
+    }
+  }
+  // else: legacy stub (no octets); length check below still applies
 
   bref.align_bytes_zero();
   uint16_t length = (uint16_t)(ceilf((float)bref.distance(bref_length) / 8) - 2);
@@ -5232,8 +5237,10 @@ SRSASN_CODE qo_s_flow_descriptions_t::unpack(asn1::cbit_ref& bref)
     return asn1::SRSASN_ERROR_DECODE_FAIL;
   }
 
-  // TODO proper unpacking
-  bref.advance_bits(length * 8);
+  encoded_value.resize(length);
+  for (uint16_t i = 0; i < length; i++) {
+    HANDLE_CODE(bref.unpack(encoded_value[i], 8));
+  }
   return SRSASN_SUCCESS;
 }
 
@@ -5480,3 +5487,4 @@ SRSASN_CODE re_attempt_indicator_t::unpack(asn1::cbit_ref& bref)
 
 } // namespace nas_5g
 } // namespace srsran
+

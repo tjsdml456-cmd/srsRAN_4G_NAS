@@ -187,6 +187,10 @@ imei = 353490069873319
 #force_imsi_attach = false
 #eia = 1,2,3
 #eea = 0,1,2,3
+# 5g_control_socket: Linux/macOS only. srsUE listens on this AF_UNIX datagram path; send one line per datagram, e.g.:
+#   printf 'MODIFY 1 1 9 0 0 0 0\\n' | socat - UNIX-SENDTO:/tmp/srsue_nas5g_control
+# Fields: PDU session id, QoS flow id, 5QI, then GBR DL/UL and MBR DL/UL in bps (0 = omit optional GBR/MBR in NAS).
+#5g_control_socket = /tmp/srsue_nas5g_control
 
 #####################################################################
 # Slice configuration
@@ -477,3 +481,4 @@ enable = false
 #tracing_buffcapacity  = 1000000
 #metrics_json_enable   = false
 #metrics_json_filename = /tmp/ue_metrics.json
+

@@ -71,7 +71,11 @@ public:
   bool enable_slicing;
   int  nssai_sst;
   int  nssai_sd;
+
+  /// If non-empty (Linux/macOS), srsUE listens on this AF_UNIX SOCK_DGRAM path for NAS 5G QoS modify commands.
+  std::string control_socket;
 };
 
 } // namespace srsue
 #endif // SRSUE_NAS_COMMON_H
+

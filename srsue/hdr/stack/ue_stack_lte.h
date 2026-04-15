@@ -202,6 +202,10 @@ private:
   void run_tti_impl(uint32_t tti, uint32_t tti_jump);
   void stop_impl();
 
+  int  open_nas5g_control_socket();
+  void close_nas5g_control_socket();
+  void poll_nas5g_control_socket();
+
   const uint32_t                  TTI_STAT_PERIOD = 1024;
   const std::chrono::milliseconds TTI_WARN_THRESHOLD_MS{5};
   const uint32_t                  SYNC_QUEUE_WARN_THRESHOLD = 5;
@@ -267,8 +271,13 @@ private:
 
   // Metrics helper
   std::atomic<uint32_t> ul_dropped_sdus{0};
+
+  // Optional AF_UNIX SOCK_DGRAM (5G-SA): `MODIFY <psi> <qfi> <5qi> <gbr_dl> <gbr_ul> <mbr_dl> <mbr_ul>` (bps; 0 omits GBR/MBR)
+  int         nas5g_ctl_sock = -1;
+  std::string nas5g_ctl_path{};
 };
 
 } // namespace srsue
 
 #endif // SRSUE_UE_STACK_LTE_H
+
