@@ -325,6 +325,12 @@ void gw::run_thread()
 
       // Check if entire packet was received
       if (pkt_len == pdu->N_bytes) {
+        uint8_t dscp = 0;
+        if (ip_pkt->version == 4) {
+          dscp = (ip_pkt->tos >> 2) & 0x3F;
+        } else if (ip6_pkt->version == 6) {
+          dscp = ((ip6_pkt->priority << 2) | (ip6_pkt->flow_lbl[0] >> 6)) & 0x3F;
+        }
         logger.info(pdu->msg, pdu->N_bytes, "TX PDU");
 
         // Make sure UE is attached and has default EPS bearer activated
@@ -351,8 +357,12 @@ void gw::run_thread()
         // Beyond this point we should have a activated default EPS bearer
         srsran_assert(default_eps_bearer_id != NOT_ASSIGNED, "Default EPS bearer not activated");
 
-        uint8_t eps_bearer_id = default_eps_bearer_id;
+        uint8_t eps_bearer_id        = default_eps_bearer_id;
+        const uint8_t default_bearer = eps_bearer_id;
         tft_matcher.check_tft_filter_match(pdu, eps_bearer_id);
+        if (eps_bearer_id != default_bearer) {
+          logger.info("UL TFT match: DSCP=%u -> EPS bearer %u (default=%u)", dscp, eps_bearer_id, default_bearer);
+        }
 
         // Wait for service request if necessary
         while (run_enable && !stack->has_active_radio_bearer(eps_bearer_id) && service_wait < SERVICE_WAIT_TOUT) {
@@ -729,3 +739,4 @@ out:
   }
 }
 } // namespace srsue
+

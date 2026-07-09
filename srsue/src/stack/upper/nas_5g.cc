@@ -842,10 +842,10 @@ int nas_5g::send_pdu_session_modification_request(uint16_t pdu_session_id,
                      pdu->N_bytes - SEQ_5G_OFFSET,
                      &pdu->msg[MAC_5G_OFFSET]);
 
-  logger.info("Sending PDU Session Modification Request in UL NAS transport (PSI=%u, QFI=%u, 5QI=%u).",
+  logger.info("NAS egress: 5QI=%u PSI=%u QFI=%u",
+              static_cast<unsigned>(five_qi),
               static_cast<unsigned>(pdu_session_id),
-              static_cast<unsigned>(qos_flow_id),
-              static_cast<unsigned>(five_qi));
+              static_cast<unsigned>(qos_flow_id));
   rrc_nr->write_sdu(std::move(pdu));
   ctxt_base.tx_count++;
 
@@ -1649,4 +1649,5 @@ int nas_5g::add_pdu_session(uint16_t                      pdu_session_id,
 }
 
 } // namespace srsue
+
 

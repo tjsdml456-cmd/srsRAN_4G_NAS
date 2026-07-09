@@ -20,6 +20,9 @@
  */
 
 #include "srsue/hdr/stack/upper/sdap.h"
+#include "srsran/upper/ipv6.h"
+
+#include <linux/ip.h>
 
 namespace srsue {
 
@@ -54,6 +57,17 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
   if (!running) {
     return;
   }
+  if (pdu->N_bytes >= sizeof(iphdr)) {
+    auto* ip_pkt = reinterpret_cast<iphdr*>(pdu->msg);
+    if (ip_pkt->version == 4) {
+      const uint8_t dscp = (ip_pkt->tos >> 2) & 0x3F;
+      logger.info("UL ingress: DSCP=%u (ToS=0x%02x) len=%u bytes (IPv4)", dscp, ip_pkt->tos, pdu->N_bytes);
+    } else if (ip_pkt->version == 6 && pdu->N_bytes >= sizeof(ipv6hdr)) {
+      auto*         ip6_pkt = reinterpret_cast<ipv6hdr*>(pdu->msg);
+      const uint8_t dscp    = ((ip6_pkt->priority << 2) | (ip6_pkt->flow_lbl[0] >> 6)) & 0x3F;
+      logger.info("UL ingress: DSCP=%u len=%u bytes (IPv6)", dscp, pdu->N_bytes);
+    }
+  }
   if (lcid < bearers.size()) {
     if (bearers[lcid].add_uplink_header) {
       if (pdu->get_headroom() > 1) {
@@ -83,3 +97,4 @@ bool sdap::set_bearer_cfg(uint32_t lcid, const sdap_interface_rrc::bearer_cfg_t&
 }
 
 } // namespace srsue
+
