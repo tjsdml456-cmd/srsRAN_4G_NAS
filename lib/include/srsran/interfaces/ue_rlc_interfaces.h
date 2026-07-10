@@ -52,6 +52,12 @@ public:
   ///< MAC pulls RLC PDUs according to TB size
   virtual void write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t sdu) = 0;
 
+  ///< PDCP calls RLC to push a priority RLC SDU (transmitted before queued SDUs)
+  virtual void write_sdu_priority(uint32_t lcid, srsran::unique_byte_buffer_t sdu) = 0;
+
+  ///< Move all priority-queue SDUs back to the normal TX queue (DSCP phase rollover)
+  virtual void demote_prio_tx_queue(uint32_t lcid) = 0;
+
   ///< Indicate RLC that a certain SN can be discarded
   virtual void discard_sdu(uint32_t lcid, uint32_t discard_sn) = 0;
 
@@ -92,3 +98,4 @@ public:
 } // namespace srsue
 
 #endif // SRSRAN_UE_RLC_INTERFACES_H
+

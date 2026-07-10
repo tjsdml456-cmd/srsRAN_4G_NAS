@@ -84,6 +84,8 @@ public:
    * PDCP interface
    ***************************************************************************/
   void write_sdu(unique_byte_buffer_t sdu) final;
+  void write_sdu_priority(unique_byte_buffer_t sdu) override;
+  void demote_prio_tx_queue() override;
 
   void discard_sdu(uint32_t discard_sn) final;
 
@@ -149,6 +151,9 @@ public:
     void set_bsr_callback(bsr_callback_t callback);
 
     int              write_sdu(unique_byte_buffer_t sdu);
+    int              write_sdu_priority(unique_byte_buffer_t sdu);
+    void             demote_prio_tx_to_normal();
+    unique_byte_buffer_t read_next_tx_sdu();
     bool             sdu_queue_is_full();
     virtual void     discard_sdu(uint32_t pdcp_sn);
     virtual uint32_t read_pdu(uint8_t* payload, uint32_t nof_bytes) = 0;
@@ -162,6 +167,7 @@ public:
 
     // Tx SDU buffers
     byte_buffer_queue tx_sdu_queue;
+    byte_buffer_queue prio_tx_sdu_queue;
 
     // Mutexes
     std::mutex mutex;
@@ -209,3 +215,4 @@ public:
 } // namespace srsran
 
 #endif // SRSRAN_RLC_AM_BASE_H
+

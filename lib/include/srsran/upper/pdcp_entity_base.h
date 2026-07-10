@@ -120,6 +120,10 @@ public:
 
   // GW/SDAP/RRC interface
   virtual void write_sdu(unique_byte_buffer_t sdu, int sn = -1) = 0;
+  virtual void write_sdu_priority(unique_byte_buffer_t sdu, int sn = -1)
+  {
+    write_sdu(std::move(sdu), sn);
+  }
 
   // RLC interface
   virtual void write_pdu(unique_byte_buffer_t pdu)               = 0;
@@ -207,3 +211,4 @@ inline uint32_t pdcp_entity_base::COUNT(uint32_t hfn, uint32_t sn)
 } // namespace srsran
 
 #endif // SRSRAN_PDCP_ENTITY_BASE_H
+

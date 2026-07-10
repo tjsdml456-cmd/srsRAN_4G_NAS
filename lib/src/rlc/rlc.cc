@@ -197,6 +197,29 @@ void rlc::write_sdu(uint32_t lcid, unique_byte_buffer_t sdu)
   }
 }
 
+void rlc::write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu)
+{
+  if (sdu->N_bytes > RLC_MAX_SDU_SIZE) {
+    logger.warning("Dropping too long priority SDU of size %d B (Max. size %d B).", sdu->N_bytes, RLC_MAX_SDU_SIZE);
+    return;
+  }
+
+  if (valid_lcid(lcid)) {
+    rlc_array.at(lcid)->write_sdu_priority_s(std::move(sdu));
+    update_bsr(lcid);
+  } else {
+    logger.warning("RLC LCID %d doesn't exist. Deallocating priority SDU", lcid);
+  }
+}
+
+void rlc::demote_prio_tx_queue(uint32_t lcid)
+{
+  if (valid_lcid(lcid)) {
+    rlc_array.at(lcid)->demote_prio_tx_queue();
+    update_bsr(lcid);
+  }
+}
+
 void rlc::write_sdu_mch(uint32_t lcid, unique_byte_buffer_t sdu)
 {
   if (valid_lcid_mrb(lcid)) {
@@ -640,3 +663,4 @@ void rlc_bearer_metrics_print(const rlc_bearer_metrics_t& metrics)
 }
 
 } // namespace srsran
+

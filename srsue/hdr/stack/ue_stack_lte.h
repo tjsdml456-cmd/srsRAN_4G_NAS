@@ -59,10 +59,24 @@ class phy_interface_stack_lte;
 class sdap_pdcp_adapter : public pdcp_interface_sdap_nr, public gw_interface_pdcp
 {
 public:
-  sdap_pdcp_adapter(pdcp* parent_pdcp_, sdap* parent_sdap_) : parent_pdcp(parent_pdcp_), parent_sdap(parent_sdap_) {}
+  sdap_pdcp_adapter(pdcp* parent_pdcp_, sdap* parent_sdap_, mac_nr* parent_mac_nr_) :
+    parent_pdcp(parent_pdcp_), parent_sdap(parent_sdap_), parent_mac_nr(parent_mac_nr_)
+  {
+  }
   void write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu) final
   {
     parent_pdcp->write_sdu(lcid, std::move(pdu));
+  }
+  void write_sdu_priority(uint32_t lcid, srsran::unique_byte_buffer_t pdu) final
+  {
+    parent_pdcp->write_sdu_priority(lcid, std::move(pdu));
+  }
+  void demote_prio_tx_queue(uint32_t lcid) final { parent_pdcp->demote_prio_tx_queue(lcid); }
+  void trigger_scheduling_request() final
+  {
+    if (parent_mac_nr != nullptr) {
+      parent_mac_nr->trigger_scheduling_request();
+    }
   }
   void write_pdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu) final
   {
@@ -74,8 +88,9 @@ public:
   }
 
 private:
-  pdcp* parent_pdcp = nullptr;
-  sdap* parent_sdap = nullptr;
+  pdcp*   parent_pdcp    = nullptr;
+  sdap*   parent_sdap    = nullptr;
+  mac_nr* parent_mac_nr  = nullptr;
 };
 
 class ue_stack_lte final : public ue_stack_base,
@@ -280,4 +295,5 @@ private:
 } // namespace srsue
 
 #endif // SRSUE_UE_STACK_LTE_H
+
 

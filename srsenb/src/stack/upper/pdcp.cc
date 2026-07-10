@@ -216,6 +216,13 @@ void pdcp::user_interface_rlc::write_sdu(uint32_t lcid, srsran::unique_byte_buff
   rlc->write_sdu(rnti, lcid, std::move(sdu));
 }
 
+void pdcp::user_interface_rlc::write_sdu_priority(uint32_t lcid, srsran::unique_byte_buffer_t sdu)
+{
+  rlc->write_sdu(rnti, lcid, std::move(sdu));
+}
+
+void pdcp::user_interface_rlc::demote_prio_tx_queue(uint32_t lcid) {}
+
 void pdcp::user_interface_rlc::discard_sdu(uint32_t lcid, uint32_t discard_sn)
 {
   rlc->discard_sdu(rnti, lcid, discard_sn);
@@ -277,3 +284,4 @@ void pdcp::get_metrics(pdcp_metrics_t& m, const uint32_t nof_tti)
 }
 
 } // namespace srsenb
+

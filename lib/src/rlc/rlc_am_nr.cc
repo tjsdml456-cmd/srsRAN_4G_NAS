@@ -79,6 +79,7 @@ bool rlc_am_nr_tx::configure(const rlc_config_t& cfg_)
   // make sure Tx queue is empty before attempting to resize
   empty_queue_no_lock();
   tx_sdu_queue.resize(cfg_.tx_queue_length);
+  prio_tx_sdu_queue.resize(cfg_.tx_queue_length);
 
   // Check timers are valid
   if (not poll_retransmit_timer.is_valid()) {
@@ -101,7 +102,7 @@ bool rlc_am_nr_tx::configure(const rlc_config_t& cfg_)
 bool rlc_am_nr_tx::has_data()
 {
   return do_status() ||                                         // if we have a status PDU to transmit
-         tx_sdu_queue.get_n_sdus() != 0 || !retx_queue.empty(); // or if there is a SDU queued up for transmission
+         tx_sdu_queue.get_n_sdus() != 0 || prio_tx_sdu_queue.get_n_sdus() != 0 || !retx_queue.empty();
 }
 
 /**
@@ -157,7 +158,7 @@ uint32_t rlc_am_nr_tx::read_pdu(uint8_t* payload, uint32_t nof_bytes)
   }
 
   // Check whether there is something to TX
-  if (tx_sdu_queue.is_empty()) {
+  if (tx_sdu_queue.is_empty() && prio_tx_sdu_queue.is_empty()) {
     RlcInfo("No data available to be sent");
     return 0;
   }
@@ -192,12 +193,12 @@ uint32_t rlc_am_nr_tx::build_new_pdu(uint8_t* payload, uint32_t nof_bytes)
     return 0;
   }
 
-  // Read new SDU from TX queue
+  // Read new SDU from TX queue (priority queue first)
   unique_byte_buffer_t tx_sdu;
-  RlcDebug("Reading from RLC SDU queue. Queue size %d", tx_sdu_queue.size());
-  do {
-    tx_sdu = tx_sdu_queue.read();
-  } while (tx_sdu == nullptr && tx_sdu_queue.size() != 0);
+  RlcDebug("Reading from RLC SDU queue. Queue size %d, prio queue size %d",
+           tx_sdu_queue.size(),
+           prio_tx_sdu_queue.size());
+  tx_sdu = read_next_tx_sdu();
 
   if (tx_sdu != nullptr) {
     RlcDebug("Read RLC SDU - RLC_SN=%d, PDCP_SN=%d, %d bytes", st.tx_next, tx_sdu->md.pdcp_sn, tx_sdu->N_bytes);
@@ -1099,8 +1100,8 @@ void rlc_am_nr_tx::get_buffer_state(uint32_t& n_bytes_new, uint32_t& n_bytes_pri
   }
 
   // Bytes needed for tx SDUs in queue
-  uint32_t n_sdus = tx_sdu_queue.get_n_sdus();
-  n_bytes_new += tx_sdu_queue.size_bytes();
+  uint32_t n_sdus = tx_sdu_queue.get_n_sdus() + prio_tx_sdu_queue.get_n_sdus();
+  n_bytes_new += tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
 
   // Room needed for fixed header of data PDUs
   n_bytes_new += min_hdr_size * n_sdus;
@@ -1152,7 +1153,8 @@ uint8_t rlc_am_nr_tx::get_pdu_poll(uint32_t sn, bool is_retx, uint32_t sdu_bytes
    * - if no new RLC SDU can be transmitted after the transmission of the AMD PDU (e.g. due to window stalling);
    *   - include a poll in the AMD PDU as described below.
    */
-  if ((tx_sdu_queue.is_empty() && retx_queue.empty() && sdu_under_segmentation_sn == INVALID_RLC_SN) ||
+  if ((tx_sdu_queue.is_empty() && prio_tx_sdu_queue.is_empty() && retx_queue.empty() &&
+       sdu_under_segmentation_sn == INVALID_RLC_SN) ||
       tx_window->full()) {
     RlcDebug("Setting poll bit due to empty buffers/inablity to TX. SN=%d, POLL_SN=%d", sn, st.poll_sn);
     poll = 1;
@@ -1214,6 +1216,9 @@ void rlc_am_nr_tx::empty_queue_no_lock()
   while (tx_sdu_queue.size() > 0) {
     unique_byte_buffer_t buf = tx_sdu_queue.read();
   }
+  while (prio_tx_sdu_queue.size() > 0) {
+    unique_byte_buffer_t buf = prio_tx_sdu_queue.read();
+  }
 }
 
 void rlc_am_nr_tx::stop()
@@ -1255,7 +1260,7 @@ void rlc_am_nr_tx::timer_expired(uint32_t timeout_id)
      *   - consider any RLC SDU which has not been positively acknowledged for retransmission.
      * - include a poll in an AMD PDU as described in section 5.3.3.2.
      */
-    if ((tx_sdu_queue.is_empty() && retx_queue.empty()) || tx_window->full()) {
+    if ((tx_sdu_queue.is_empty() && prio_tx_sdu_queue.is_empty() && retx_queue.empty()) || tx_window->full()) {
       if (tx_window->empty()) {
         RlcError("t-PollRetransmit expired, but the tx_window is empty. POLL_SN=%d, Tx_Next_Ack=%d, tx_window_size=%d",
                  st.poll_sn,
@@ -2026,3 +2031,4 @@ uint32_t rlc_am_nr_rx::get_rx_buffered_bytes()
   return 0;
 }
 } // namespace srsran
+

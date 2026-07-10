@@ -107,6 +107,33 @@ void rlc_um_base::write_sdu(unique_byte_buffer_t sdu)
   }
 }
 
+void rlc_um_base::write_sdu_priority(unique_byte_buffer_t sdu)
+{
+  if (not tx_enabled || not tx) {
+    RlcDebug("RB is currently deactivated. Dropping priority SDU (%d B)", sdu->N_bytes);
+    std::lock_guard<std::mutex> lock(metrics_mutex);
+    metrics.num_lost_sdus++;
+    return;
+  }
+
+  int sdu_bytes = sdu->N_bytes;
+  if (tx->try_write_sdu_priority(std::move(sdu)) == SRSRAN_SUCCESS) {
+    std::lock_guard<std::mutex> lock(metrics_mutex);
+    metrics.num_tx_sdus++;
+    metrics.num_tx_sdu_bytes += sdu_bytes;
+  } else {
+    std::lock_guard<std::mutex> lock(metrics_mutex);
+    metrics.num_lost_sdus++;
+  }
+}
+
+void rlc_um_base::demote_prio_tx_queue()
+{
+  if (tx) {
+    tx->demote_prio_tx_to_normal();
+  }
+}
+
 void rlc_um_base::discard_sdu(uint32_t discard_sn)
 {
   if (not tx_enabled || not tx) {
@@ -257,6 +284,9 @@ void rlc_um_base::rlc_um_base_tx::empty_queue()
   while (not tx_sdu_queue.is_empty()) {
     unique_byte_buffer_t buf = tx_sdu_queue.read();
   }
+  while (not prio_tx_sdu_queue.is_empty()) {
+    unique_byte_buffer_t buf = prio_tx_sdu_queue.read();
+  }
 
   // deallocate SDU that is currently processed
   tx_sdu.reset();
@@ -264,12 +294,100 @@ void rlc_um_base::rlc_um_base_tx::empty_queue()
 
 bool rlc_um_base::rlc_um_base_tx::has_data()
 {
-  return (tx_sdu != nullptr || !tx_sdu_queue.is_empty());
+  return (tx_sdu != nullptr || !tx_sdu_queue.is_empty() || !prio_tx_sdu_queue.is_empty());
 }
 
 void rlc_um_base::rlc_um_base_tx::set_bsr_callback(bsr_callback_t callback)
 {
   bsr_callback = callback;
+}
+
+void rlc_um_base::rlc_um_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
+{
+  if (sdu) {
+    RlcHexInfo(sdu->msg,
+               sdu->N_bytes,
+               "Tx priority SDU (%d B, prio_tx_sdu_queue_len=%d)",
+               sdu->N_bytes,
+               prio_tx_sdu_queue.size());
+    prio_tx_sdu_queue.write(std::move(sdu));
+  } else {
+    RlcWarning("NULL SDU pointer in write_sdu_priority()");
+  }
+}
+
+int rlc_um_base::rlc_um_base_tx::try_write_sdu_priority(unique_byte_buffer_t sdu)
+{
+  if (sdu) {
+    uint8_t*                                 msg_ptr   = sdu->msg;
+    uint32_t                                 nof_bytes = sdu->N_bytes;
+    srsran::error_type<unique_byte_buffer_t> ret       = prio_tx_sdu_queue.try_write(std::move(sdu));
+    if (ret) {
+      RlcHexInfo(msg_ptr,
+                 nof_bytes,
+                 "Tx priority SDU (%d B, prio_tx_sdu_queue_len=%d)",
+                 nof_bytes,
+                 prio_tx_sdu_queue.size());
+      return SRSRAN_SUCCESS;
+    } else {
+      RlcHexWarning(ret.error()->msg,
+                    ret.error()->N_bytes,
+                    "[Dropped priority SDU] %s Tx SDU (%d B, prio_tx_sdu_queue_len=%d)",
+                    rb_name.c_str(),
+                    ret.error()->N_bytes,
+                    prio_tx_sdu_queue.size());
+    }
+  } else {
+    RlcWarning("NULL SDU pointer in write_sdu_priority()");
+  }
+  return SRSRAN_ERROR;
+}
+
+unique_byte_buffer_t rlc_um_base::rlc_um_base_tx::read_next_tx_sdu()
+{
+  unique_byte_buffer_t sdu;
+  if (not prio_tx_sdu_queue.is_empty()) {
+    do {
+      sdu = prio_tx_sdu_queue.read();
+    } while (sdu == nullptr && prio_tx_sdu_queue.size() != 0);
+    if (sdu != nullptr) {
+      RlcDebug("Dequeue priority SDU (%d B), prio_len=%u, normal_len=%u",
+              sdu->N_bytes,
+              prio_tx_sdu_queue.size(),
+              tx_sdu_queue.size());
+      return sdu;
+    }
+  }
+  do {
+    sdu = tx_sdu_queue.read();
+  } while (sdu == nullptr && tx_sdu_queue.size() != 0);
+  if (sdu != nullptr) {
+    RlcDebug("Dequeue normal SDU (%d B), prio_len=%u, normal_len=%u",
+            sdu->N_bytes,
+            prio_tx_sdu_queue.size(),
+            tx_sdu_queue.size());
+  }
+  return sdu;
+}
+
+void rlc_um_base::rlc_um_base_tx::demote_prio_tx_to_normal()
+{
+  std::lock_guard<std::mutex> lock(mutex);
+
+  uint32_t moved = 0;
+  while (not prio_tx_sdu_queue.is_empty()) {
+    unique_byte_buffer_t sdu = prio_tx_sdu_queue.read();
+    if (sdu != nullptr) {
+      tx_sdu_queue.write(std::move(sdu));
+      moved++;
+    }
+  }
+  if (moved > 0) {
+    RlcInfo("Demoted %u SDUs from prio to normal queue (prio_len=%u, normal_len=%u)",
+            moved,
+            prio_tx_sdu_queue.size(),
+            tx_sdu_queue.size());
+  }
 }
 
 void rlc_um_base::rlc_um_base_tx::write_sdu(unique_byte_buffer_t sdu)
@@ -323,7 +441,7 @@ void rlc_um_base::rlc_um_base_tx::discard_sdu(uint32_t discard_sn)
 
 bool rlc_um_base::rlc_um_base_tx::sdu_queue_is_full()
 {
-  return tx_sdu_queue.is_full();
+  return tx_sdu_queue.is_full() && prio_tx_sdu_queue.is_full();
 }
 
 uint32_t rlc_um_base::rlc_um_base_tx::build_data_pdu(uint8_t* payload, uint32_t nof_bytes)
@@ -333,7 +451,7 @@ uint32_t rlc_um_base::rlc_um_base_tx::build_data_pdu(uint8_t* payload, uint32_t 
     std::lock_guard<std::mutex> lock(mutex);
     RlcDebug("MAC opportunity - %d bytes", nof_bytes);
 
-    if (tx_sdu == nullptr && tx_sdu_queue.is_empty()) {
+    if (tx_sdu == nullptr && tx_sdu_queue.is_empty() && prio_tx_sdu_queue.is_empty()) {
       RlcInfo("No data available to be sent");
       return 0;
     }
@@ -348,3 +466,4 @@ uint32_t rlc_um_base::rlc_um_base_tx::build_data_pdu(uint8_t* payload, uint32_t 
 }
 
 } // namespace srsran
+

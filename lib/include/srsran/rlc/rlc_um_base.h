@@ -60,8 +60,10 @@ public:
   uint32_t   get_lcid() final;
 
   // PDCP interface
-  void write_sdu(unique_byte_buffer_t sdu);
-  void discard_sdu(uint32_t discard_sn);
+  void write_sdu(unique_byte_buffer_t sdu) override;
+  void write_sdu_priority(unique_byte_buffer_t sdu) override;
+  void demote_prio_tx_queue() override;
+  void discard_sdu(uint32_t discard_sn) override;
   bool sdu_queue_is_full();
 
   // MAC interface
@@ -92,9 +94,12 @@ protected:
     void             reestablish();
     void             empty_queue();
     void             write_sdu(unique_byte_buffer_t sdu);
+    void             write_sdu_priority(unique_byte_buffer_t sdu);
     void             discard_sdu(uint32_t discard_sn);
     bool             sdu_queue_is_full();
     int              try_write_sdu(unique_byte_buffer_t sdu);
+    int              try_write_sdu_priority(unique_byte_buffer_t sdu);
+    void             demote_prio_tx_to_normal();
     void             reset_metrics();
     bool             has_data();
     virtual uint32_t get_buffer_state() = 0;
@@ -112,7 +117,10 @@ protected:
 
     // TX SDU buffers
     byte_buffer_queue    tx_sdu_queue;
+    byte_buffer_queue    prio_tx_sdu_queue;
     unique_byte_buffer_t tx_sdu;
+
+    unique_byte_buffer_t read_next_tx_sdu();
 
     // Mutexes
     std::mutex mutex;
@@ -185,3 +193,4 @@ protected:
 } // namespace srsran
 
 #endif // SRSRAN_RLC_UM_BASE_H
+

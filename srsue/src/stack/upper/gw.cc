@@ -328,8 +328,10 @@ void gw::run_thread()
         uint8_t dscp = 0;
         if (ip_pkt->version == 4) {
           dscp = (ip_pkt->tos >> 2) & 0x3F;
+          logger.info("UL ingress: DSCP=%u (ToS=0x%02x) len=%u bytes (IPv4)", dscp, ip_pkt->tos, pdu->N_bytes);
         } else if (ip6_pkt->version == 6) {
           dscp = ((ip6_pkt->priority << 2) | (ip6_pkt->flow_lbl[0] >> 6)) & 0x3F;
+          logger.info("UL ingress: DSCP=%u len=%u bytes (IPv6)", dscp, pdu->N_bytes);
         }
         logger.info(pdu->msg, pdu->N_bytes, "TX PDU");
 

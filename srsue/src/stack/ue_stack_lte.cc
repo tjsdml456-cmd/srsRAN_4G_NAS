@@ -69,7 +69,7 @@ ue_stack_lte::ue_stack_lte() :
   pdcp(&task_sched, "PDCP"),
   pdcp_nr(&task_sched, "PDCP-NR"),
   sdap("SDAP-NR"),
-  sdap_pdcp(&pdcp_nr, &sdap),
+  sdap_pdcp(&pdcp_nr, &sdap, &mac_nr),
   nas(srslog::fetch_basic_logger("NAS", false), &task_sched),
   nas_5g(srslog::fetch_basic_logger("NAS5G", false), &task_sched),
   thread("STACK"),
@@ -148,6 +148,7 @@ int ue_stack_lte::init(const stack_args_t& args_)
   rrc_nr_logger.set_hex_dump_max_size(args.log.rrc_hex_limit);
   pdcp_nr_logger.set_level(srslog::str_to_basic_level(args.log.pdcp_level));
   pdcp_nr_logger.set_hex_dump_max_size(args.log.pdcp_hex_limit);
+  srslog::fetch_basic_logger("SDAP-NR").set_level(srslog::str_to_basic_level(args.log.pdcp_level));
   rlc_nr_logger.set_level(srslog::str_to_basic_level(args.log.rlc_level));
   rlc_nr_logger.set_hex_dump_max_size(args.log.rlc_hex_limit);
 
@@ -699,4 +700,5 @@ void ue_stack_lte::poll_nas5g_control_socket()
 }
 
 } // namespace srsue
+
 

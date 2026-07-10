@@ -101,6 +101,22 @@ void pdcp::write_sdu(uint32_t lcid, unique_byte_buffer_t sdu, int sn)
   }
 }
 
+void pdcp::write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu, int sn)
+{
+  if (valid_lcid(lcid)) {
+    pdcp_array.at(lcid)->write_sdu_priority(std::move(sdu), sn);
+  } else {
+    logger.warning("LCID %d doesn't exist. Deallocating priority SDU", lcid);
+  }
+}
+
+void pdcp::demote_prio_tx_queue(uint32_t lcid)
+{
+  if (valid_lcid(lcid)) {
+    rlc->demote_prio_tx_queue(lcid);
+  }
+}
+
 void pdcp::write_sdu_mch(uint32_t lcid, unique_byte_buffer_t sdu)
 {
   if (valid_mch_lcid(lcid)) {
@@ -393,3 +409,4 @@ void pdcp::reset_metrics()
 }
 
 } // namespace srsran
+

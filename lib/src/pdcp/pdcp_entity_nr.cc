@@ -102,11 +102,22 @@ void pdcp_entity_nr::reset()
 // SDAP/RRC interface
 void pdcp_entity_nr::write_sdu(unique_byte_buffer_t sdu, int sn)
 {
+  write_sdu_internal(std::move(sdu), sn, false);
+}
+
+void pdcp_entity_nr::write_sdu_priority(unique_byte_buffer_t sdu, int sn)
+{
+  write_sdu_internal(std::move(sdu), sn, true);
+}
+
+void pdcp_entity_nr::write_sdu_internal(unique_byte_buffer_t sdu, int sn, bool priority)
+{
   // Log SDU
   logger.info(sdu->msg,
               sdu->N_bytes,
-              "TX %s SDU (%dB), integrity=%s, encryption=%s",
+              "TX %s %sSDU (%dB), integrity=%s, encryption=%s",
               rb_name.c_str(),
+              priority ? "priority " : "",
               sdu->N_bytes,
               srsran_direction_text[integrity_direction],
               srsran_direction_text[encryption_direction]);
@@ -176,7 +187,11 @@ void pdcp_entity_nr::write_sdu(unique_byte_buffer_t sdu, int sn)
 
   // Check if PDCP is associated with more than on RLC entity TODO
   // Write to lower layers
-  rlc->write_sdu(lcid, std::move(sdu));
+  if (priority) {
+    rlc->write_sdu_priority(lcid, std::move(sdu));
+  } else {
+    rlc->write_sdu(lcid, std::move(sdu));
+  }
 
   // Increment TX_NEXT
   tx_next++;
@@ -437,3 +452,4 @@ void pdcp_entity_nr::reset_metrics()
 }
 
 } // namespace srsran
+

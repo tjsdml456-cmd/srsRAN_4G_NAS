@@ -172,6 +172,8 @@ public:
   const char* get_rb_name(uint32_t lcid);
 
   void write_sdu(uint32_t lcid, unique_byte_buffer_t sdu);
+  void write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu);
+  void demote_prio_tx_queue(uint32_t lcid);
 
   void discard_sdu(uint32_t lcid, uint32_t sn);
 
@@ -319,3 +321,4 @@ private:
 };
 
 #endif // SRSUE_TTCN3_SYSSIM_H
+

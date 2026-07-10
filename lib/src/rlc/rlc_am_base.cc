@@ -142,6 +142,21 @@ void rlc_am::write_sdu(unique_byte_buffer_t sdu)
   }
 }
 
+void rlc_am::write_sdu_priority(unique_byte_buffer_t sdu)
+{
+  uint32_t nof_bytes = sdu->N_bytes;
+  if (tx_base->write_sdu_priority(std::move(sdu)) == SRSRAN_SUCCESS) {
+    std::lock_guard<std::mutex> lock(metrics_mutex);
+    metrics.num_tx_sdus++;
+    metrics.num_tx_sdu_bytes += nof_bytes;
+  }
+}
+
+void rlc_am::demote_prio_tx_queue()
+{
+  tx_base->demote_prio_tx_to_normal();
+}
+
 void rlc_am::discard_sdu(uint32_t discard_sn)
 {
   tx_base->discard_sdu(discard_sn);
@@ -268,6 +283,93 @@ int rlc_am::rlc_am_base_tx::write_sdu(unique_byte_buffer_t sdu)
   return SRSRAN_SUCCESS;
 }
 
+int rlc_am::rlc_am_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+
+  if (!tx_enabled) {
+    return SRSRAN_ERROR;
+  }
+
+  if (sdu.get() == nullptr) {
+    RlcWarning("NULL SDU pointer in write_sdu_priority()");
+    return SRSRAN_ERROR;
+  }
+
+  uint32_t sdu_pdcp_sn = sdu->md.pdcp_sn;
+
+  uint8_t*                                 msg_ptr   = sdu->msg;
+  uint32_t                                 nof_bytes = sdu->N_bytes;
+  srsran::error_type<unique_byte_buffer_t> ret       = prio_tx_sdu_queue.try_write(std::move(sdu));
+  if (ret) {
+    RlcHexInfo(msg_ptr,
+               nof_bytes,
+               "Tx priority SDU (%d B, PDCP_SN=%ld prio_tx_sdu_queue_len=%d)",
+               nof_bytes,
+               sdu_pdcp_sn,
+               prio_tx_sdu_queue.size());
+  } else {
+    RlcHexWarning(ret.error()->msg,
+                  ret.error()->N_bytes,
+                  "[Dropped priority SDU] Tx SDU (%d B, PDCP_SN=%ld, prio_tx_sdu_queue_len=%d)",
+                  ret.error()->N_bytes,
+                  sdu_pdcp_sn,
+                  prio_tx_sdu_queue.size());
+    return SRSRAN_ERROR;
+  }
+
+  return SRSRAN_SUCCESS;
+}
+
+void rlc_am::rlc_am_base_tx::demote_prio_tx_to_normal()
+{
+  std::lock_guard<std::mutex> lock(mutex);
+
+  uint32_t moved = 0;
+  while (not prio_tx_sdu_queue.is_empty()) {
+    unique_byte_buffer_t sdu = prio_tx_sdu_queue.read();
+    if (sdu != nullptr) {
+      tx_sdu_queue.write(std::move(sdu));
+      moved++;
+    }
+  }
+  if (moved > 0) {
+    RlcInfo("Demoted %u SDUs from prio to normal queue (prio_len=%u, normal_len=%u)",
+            moved,
+            prio_tx_sdu_queue.size(),
+            tx_sdu_queue.size());
+  }
+}
+
+unique_byte_buffer_t rlc_am::rlc_am_base_tx::read_next_tx_sdu()
+{
+  unique_byte_buffer_t sdu;
+  if (not prio_tx_sdu_queue.is_empty()) {
+    do {
+      sdu = prio_tx_sdu_queue.read();
+    } while (sdu == nullptr && prio_tx_sdu_queue.size() != 0);
+    if (sdu != nullptr) {
+      RlcDebug("Dequeue priority SDU (%d B, PDCP_SN=%ld), prio_len=%u, normal_len=%u",
+              sdu->N_bytes,
+              sdu->md.pdcp_sn,
+              prio_tx_sdu_queue.size(),
+              tx_sdu_queue.size());
+      return sdu;
+    }
+  }
+  do {
+    sdu = tx_sdu_queue.read();
+  } while (sdu == nullptr && tx_sdu_queue.size() != 0);
+  if (sdu != nullptr) {
+    RlcDebug("Dequeue normal SDU (%d B, PDCP_SN=%ld), prio_len=%u, normal_len=%u",
+            sdu->N_bytes,
+            sdu->md.pdcp_sn,
+            prio_tx_sdu_queue.size(),
+            tx_sdu_queue.size());
+  }
+  return sdu;
+}
+
 void rlc_am::rlc_am_base_tx::discard_sdu(uint32_t discard_sn)
 {
   std::lock_guard<std::mutex> lock(mutex);
@@ -290,7 +392,7 @@ void rlc_am::rlc_am_base_tx::discard_sdu(uint32_t discard_sn)
 
 bool rlc_am::rlc_am_base_tx::sdu_queue_is_full()
 {
-  return tx_sdu_queue.is_full();
+  return tx_sdu_queue.is_full() && prio_tx_sdu_queue.is_full();
 }
 
 void rlc_am::rlc_am_base_tx::set_bsr_callback(bsr_callback_t callback)
@@ -317,3 +419,4 @@ void rlc_am::rlc_am_base_rx::write_pdu(uint8_t* payload, const uint32_t nof_byte
   }
 }
 } // namespace srsran
+

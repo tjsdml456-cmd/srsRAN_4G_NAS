@@ -1188,6 +1188,13 @@ void ttcn3_syssim::write_sdu(uint32_t lcid, unique_byte_buffer_t sdu)
   ue->new_tb(dl_grant, (const uint8_t*)mac_pdu_ptr);
 }
 
+void ttcn3_syssim::write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu)
+{
+  write_sdu(lcid, std::move(sdu));
+}
+
+void ttcn3_syssim::demote_prio_tx_queue(uint32_t lcid) {}
+
 void ttcn3_syssim::discard_sdu(uint32_t lcid, uint32_t sn) {}
 
 bool ttcn3_syssim::rb_is_um(uint32_t lcid)
@@ -1324,3 +1331,4 @@ ttcn3_helpers::pdcp_count_map_t ttcn3_syssim::get_pdcp_count(const std::string c
   }
   return bearers;
 }
+

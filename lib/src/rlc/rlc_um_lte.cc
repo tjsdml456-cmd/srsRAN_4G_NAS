@@ -82,8 +82,8 @@ uint32_t rlc_um_lte::rlc_um_lte_tx::get_buffer_state()
   std::lock_guard<std::mutex> lock(mutex);
 
   // Bytes needed for tx SDUs
-  uint32_t n_sdus  = tx_sdu_queue.size();
-  uint32_t n_bytes = tx_sdu_queue.size_bytes();
+  uint32_t n_sdus  = tx_sdu_queue.size() + prio_tx_sdu_queue.size();
+  uint32_t n_bytes = tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
   if (tx_sdu) {
     n_sdus++;
     n_bytes += tx_sdu->N_bytes;
@@ -115,6 +115,7 @@ bool rlc_um_lte::rlc_um_lte_tx::configure(const rlc_config_t& cnfg_, std::string
   }
 
   tx_sdu_queue.resize(cnfg_.tx_queue_length);
+  prio_tx_sdu_queue.resize(cnfg_.tx_queue_length);
 
   rb_name = rb_name_;
 
@@ -169,8 +170,8 @@ uint32_t rlc_um_lte::rlc_um_lte_tx::build_data_pdu(unique_byte_buffer_t pdu, uin
     header.fi |= RLC_FI_FIELD_NOT_START_ALIGNED; // First byte does not correspond to first byte of SDU
   }
 
-  // Pull SDUs from queue
-  while (pdu_space > head_len + 1 && tx_sdu_queue.size() > 0) {
+  // Pull SDUs from queue (priority queue first)
+  while (pdu_space > head_len + 1 && (tx_sdu_queue.size() > 0 || prio_tx_sdu_queue.size() > 0)) {
     RlcDebug("pdu_space=%d, head_len=%d", pdu_space, head_len);
     if (last_li > 0) {
       header.li[header.N_li++] = last_li;
@@ -182,7 +183,10 @@ uint32_t rlc_um_lte::rlc_um_lte_tx::build_data_pdu(unique_byte_buffer_t pdu, uin
       header.N_li--;
       break;
     }
-    tx_sdu  = tx_sdu_queue.read();
+    tx_sdu  = read_next_tx_sdu();
+    if (tx_sdu == nullptr) {
+      break;
+    }
     to_move = (space >= tx_sdu->N_bytes) ? tx_sdu->N_bytes : space;
     RlcDebug("adding new SDU segment - %d bytes of %d remaining", to_move, tx_sdu->N_bytes);
     memcpy(pdu_ptr, tx_sdu->msg, to_move);
@@ -832,3 +836,4 @@ bool rlc_um_end_aligned(uint8_t fi)
 }
 
 } // namespace srsran
+

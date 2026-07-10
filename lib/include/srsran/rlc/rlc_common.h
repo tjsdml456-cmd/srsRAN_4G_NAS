@@ -279,6 +279,15 @@ public:
     }
   }
 
+  void write_sdu_priority_s(unique_byte_buffer_t sdu)
+  {
+    if (suspended) {
+      queue_tx_sdu(std::move(sdu));
+    } else {
+      write_sdu_priority(std::move(sdu));
+    }
+  }
+
   virtual rlc_mode_t get_mode() = 0;
   virtual uint32_t   get_lcid() = 0;
 
@@ -287,6 +296,8 @@ public:
 
   // PDCP interface
   virtual void write_sdu(unique_byte_buffer_t sdu) = 0;
+  virtual void write_sdu_priority(unique_byte_buffer_t sdu) { write_sdu(std::move(sdu)); }
+  virtual void demote_prio_tx_queue() {}
   virtual void discard_sdu(uint32_t discard_sn)    = 0;
   virtual bool sdu_queue_is_full()                 = 0;
 
@@ -351,3 +362,4 @@ private:
 } // namespace srsran
 
 #endif // SRSRAN_RLC_COMMON_H
+

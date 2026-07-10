@@ -256,4 +256,17 @@ srsue/src/stack/upper/CMakeFiles/srsue_upper.dir/sdap.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/pdcp_interface_types.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/security.h \
  /usr/include/c++/11/math.h \
- /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_sdap_interfaces.h
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_sdap_interfaces.h \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/ipv6.h \
+ /usr/include/linux/in6.h /usr/include/linux/types.h \
+ /usr/include/x86_64-linux-gnu/asm/types.h \
+ /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
+ /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
+ /usr/include/linux/stddef.h \
+ /usr/include/x86_64-linux-gnu/asm/posix_types.h \
+ /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
+ /usr/include/asm-generic/posix_types.h /usr/include/linux/libc-compat.h \
+ /usr/include/linux/ipv6.h /usr/include/x86_64-linux-gnu/asm/byteorder.h \
+ /usr/include/linux/byteorder/little_endian.h /usr/include/linux/swab.h \
+ /usr/include/x86_64-linux-gnu/asm/swab.h /usr/include/linux/ip.h

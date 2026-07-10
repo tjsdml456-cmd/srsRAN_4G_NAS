@@ -55,6 +55,7 @@ public:
 
   // RRC interface
   void write_sdu(unique_byte_buffer_t sdu, int sn = -1) final;
+  void write_sdu_priority(unique_byte_buffer_t sdu, int sn = -1) final;
 
   // RLC interface
   void write_pdu(unique_byte_buffer_t pdu) final;
@@ -83,6 +84,8 @@ public:
   uint32_t get_rx_next() const { return rx_next; }
   uint32_t get_rx_deliv() const { return rx_deliv; }
   uint32_t get_rx_reord() const { return rx_reord; }
+
+  void write_sdu_internal(unique_byte_buffer_t sdu, int sn, bool priority);
 
 private:
   srsue::rlc_interface_pdcp* rlc = nullptr;
@@ -168,3 +171,4 @@ inline void pdcp_entity_nr::pass_to_upper_layers(unique_byte_buffer_t sdu)
 
 } // namespace srsran
 #endif // SRSRAN_PDCP_ENTITY_NR_H
+

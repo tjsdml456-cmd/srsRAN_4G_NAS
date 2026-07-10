@@ -67,6 +67,16 @@ void proc_bsr_nr::set_trigger(bsr_trigger_type_t new_trigger)
   }
 }
 
+void proc_bsr_nr::trigger_regular()
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  if (not initiated) {
+    return;
+  }
+  logger.info("BSR:   Forcing Regular BSR (and SR)");
+  set_trigger(REGULAR);
+}
+
 void proc_bsr_nr::reset()
 {
   std::lock_guard<std::mutex> lock(mutex);
@@ -324,3 +334,4 @@ uint8_t proc_bsr_nr::buff_size_bytes_to_field(uint32_t buffer_size, bsr_format_n
 }
 
 } // namespace srsue
+

@@ -90,8 +90,8 @@ uint32_t rlc_um_nr::rlc_um_nr_tx::get_buffer_state()
   std::lock_guard<std::mutex> lock(mutex);
 
   // Bytes needed for tx SDUs
-  uint32_t n_sdus  = tx_sdu_queue.get_n_sdus();
-  uint32_t n_bytes = tx_sdu_queue.size_bytes();
+  uint32_t n_sdus  = tx_sdu_queue.get_n_sdus() + prio_tx_sdu_queue.get_n_sdus();
+  uint32_t n_bytes = tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
   if (tx_sdu) {
     n_sdus++;
     n_bytes += tx_sdu->N_bytes;
@@ -130,6 +130,7 @@ bool rlc_um_nr::rlc_um_nr_tx::configure(const rlc_config_t& cnfg_, std::string r
   head_len_segment = rlc_um_nr_packed_length(header);
 
   tx_sdu_queue.resize(cnfg_.tx_queue_length);
+  prio_tx_sdu_queue.resize(cnfg_.tx_queue_length);
 
   rb_name = rb_name_;
 
@@ -154,10 +155,8 @@ uint32_t rlc_um_nr::rlc_um_nr_tx::build_data_pdu(unique_byte_buffer_t pdu, uint8
 
   // Select segmentation information and header size
   if (tx_sdu == nullptr) {
-    // Read a new SDU
-    do {
-      tx_sdu = tx_sdu_queue.read();
-    } while (tx_sdu == nullptr && tx_sdu_queue.size() != 0);
+    // Read a new SDU (priority queue first)
+    tx_sdu = read_next_tx_sdu();
     if (tx_sdu == nullptr) {
       RlcDebug("Cannot build any PDU, tx_sdu_queue has no non-null SDU.");
       return 0;
@@ -746,3 +745,4 @@ uint32_t rlc_um_nr_write_data_pdu_header(const rlc_um_nr_pdu_header_t& header, b
 }
 
 } // namespace srsran
+

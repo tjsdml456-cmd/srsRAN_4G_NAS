@@ -26,12 +26,17 @@
 
 namespace srsue {
 
-sdap::sdap(const char* logname) : logger(srslog::fetch_basic_logger(logname)) {}
+sdap::sdap(const char* logname) : logger(srslog::fetch_basic_logger(logname))
+{
+  logger.set_level(srslog::basic_levels::info);
+  priority_dscp.fill(DSCP_UNSET);
+}
 
 bool sdap::init(pdcp_interface_sdap_nr* pdcp_, srsue::gw_interface_pdcp* gw_)
 {
   m_pdcp = pdcp_;
   m_gw   = gw_;
+  logger.set_level(srslog::basic_levels::info);
 
   running = true;
   return true;
@@ -57,17 +62,43 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
   if (!running) {
     return;
   }
+
+  bool    use_priority = false;
+  uint8_t dscp         = DSCP_UNSET;
   if (pdu->N_bytes >= sizeof(iphdr)) {
     auto* ip_pkt = reinterpret_cast<iphdr*>(pdu->msg);
     if (ip_pkt->version == 4) {
-      const uint8_t dscp = (ip_pkt->tos >> 2) & 0x3F;
+      dscp = (ip_pkt->tos >> 2) & 0x3F;
       logger.info("UL ingress: DSCP=%u (ToS=0x%02x) len=%u bytes (IPv4)", dscp, ip_pkt->tos, pdu->N_bytes);
     } else if (ip_pkt->version == 6 && pdu->N_bytes >= sizeof(ipv6hdr)) {
-      auto*         ip6_pkt = reinterpret_cast<ipv6hdr*>(pdu->msg);
-      const uint8_t dscp    = ((ip6_pkt->priority << 2) | (ip6_pkt->flow_lbl[0] >> 6)) & 0x3F;
+      auto* ip6_pkt = reinterpret_cast<ipv6hdr*>(pdu->msg);
+      dscp          = ((ip6_pkt->priority << 2) | (ip6_pkt->flow_lbl[0] >> 6)) & 0x3F;
       logger.info("UL ingress: DSCP=%u len=%u bytes (IPv6)", dscp, pdu->N_bytes);
     }
   }
+
+  if (dscp != DSCP_UNSET && lcid < priority_dscp.size()) {
+    if (priority_dscp[lcid] == DSCP_UNSET) {
+      // Only lock the initial phase on a real data-sized packet.
+      if (pdu->N_bytes >= MIN_DSCP_PHASE_BYTES) {
+        priority_dscp[lcid] = dscp;
+      }
+    } else if (dscp != priority_dscp[lcid] && pdu->N_bytes >= MIN_DSCP_PHASE_BYTES) {
+      // Do not demote/flush queued SDUs: they already have PDCP SNs. Dropping them
+      // creates SN holes and gNB RLC reordering can stall for seconds. Demoting
+      // prio→normal also inverts SN order (new prio SN sent before older normal SN).
+      // Keep FIFO in the prio queue; only update phase + ask for UL.
+      logger.info("DSCP phase change %u -> %u on lcid=%u (len=%u)",
+                  priority_dscp[lcid],
+                  dscp,
+                  lcid,
+                  pdu->N_bytes);
+      priority_dscp[lcid] = dscp;
+      m_pdcp->trigger_scheduling_request();
+    }
+    use_priority = (priority_dscp[lcid] != DSCP_UNSET && dscp == priority_dscp[lcid]);
+  }
+
   if (lcid < bearers.size()) {
     if (bearers[lcid].add_uplink_header) {
       if (pdu->get_headroom() > 1) {
@@ -79,7 +110,11 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
       }
     }
   }
-  m_pdcp->write_sdu(lcid, std::move(pdu));
+  if (use_priority) {
+    m_pdcp->write_sdu_priority(lcid, std::move(pdu));
+  } else {
+    m_pdcp->write_sdu(lcid, std::move(pdu));
+  }
 }
 
 bool sdap::set_bearer_cfg(uint32_t lcid, const sdap_interface_rrc::bearer_cfg_t& cfg)

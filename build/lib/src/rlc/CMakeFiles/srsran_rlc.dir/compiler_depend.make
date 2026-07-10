@@ -1111,7 +1111,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc.cc.o: ../lib/src/rlc/rlc.cc \
 
 lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_base.cc \
   /usr/include/stdc-predef.h \
-  ../lib/include/srsran/rlc/rlc_am_base.h \
+  ../lib/include/srsran/rlc/rlc_am_nr.h \
   ../lib/include/srsran/common/buffer_pool.h \
   ../lib/include/srsran/common/byte_buffer.h \
   ../lib/include/srsran/common/common.h \
@@ -1413,6 +1413,10 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_ba
   ../lib/include/srsran/adt/intrusive_list.h \
   ../lib/include/srsran/adt/move_callback.h \
   /usr/include/inttypes.h \
+  ../lib/include/srsran/interfaces/pdcp_interface_types.h \
+  ../lib/include/srsran/common/security.h \
+  /usr/include/c++/11/math.h \
+  ../lib/include/srsran/rlc/rlc_am_base.h \
   ../lib/include/srsran/interfaces/ue_rrc_interfaces.h \
   ../lib/include/srsran/interfaces/phy_interface_types.h \
   ../lib/include/srsran/srsran.h \
@@ -1421,7 +1425,6 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_ba
   /usr/include/c++/11/istream \
   /usr/include/c++/11/bits/istream.tcc \
   /usr/include/c++/11/bits/sstream.tcc \
-  /usr/include/c++/11/math.h \
   ../lib/include/srsran/config.h \
   lib/include/srsran/version.h \
   ../lib/include/srsran/phy/utils/bit.h \
@@ -1626,23 +1629,8 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_ba
   /usr/include/x86_64-linux-gnu/bits/unistd.h \
   /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
   /usr/include/linux/close_range.h \
-  ../lib/include/srsran/rlc/rlc_am_lte.h \
-  ../lib/include/srsran/adt/accumulators.h \
-  ../lib/include/srsran/adt/circular_array.h \
-  ../lib/include/srsran/common/task_scheduler.h \
-  ../lib/include/srsran/common/block_queue.h \
-  ../lib/include/srsran/common/interfaces_common.h \
-  ../lib/include/srsran/common/security.h \
-  ../lib/include/srsran/common/multiqueue.h \
-  ../lib/include/srsran/common/thread_pool.h \
-  ../lib/include/srsran/common/threads.h \
-  /usr/include/x86_64-linux-gnu/sys/timerfd.h \
-  /usr/include/x86_64-linux-gnu/bits/timerfd.h \
-  ../lib/include/srsran/common/timers.h \
-  ../lib/include/srsran/common/timeout.h \
-  ../lib/include/srsran/interfaces/pdcp_interface_types.h \
   ../lib/include/srsran/rlc/rlc_am_data_structs.h \
-  ../lib/include/srsran/rlc/rlc_am_lte_packing.h \
+  ../lib/include/srsran/rlc/rlc_am_nr_packing.h \
   ../lib/include/srsran/common/string_helpers.h \
   /usr/include/c++/11/fstream \
   /usr/include/c++/11/bits/codecvt.h \
@@ -1658,11 +1646,13 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_ba
   /usr/include/c++/11/bits/locale_facets_nonio.tcc \
   /usr/include/c++/11/bits/locale_conv.h \
   /usr/include/c++/11/bits/quoted_string.h \
-  ../lib/include/srsran/rlc/rlc_am_nr.h \
-  ../lib/include/srsran/rlc/rlc_am_nr_packing.h \
   /usr/include/c++/11/set \
   /usr/include/c++/11/bits/stl_set.h \
-  /usr/include/c++/11/bits/stl_multiset.h
+  /usr/include/c++/11/bits/stl_multiset.h \
+  ../lib/include/srsran/common/standard_streams.h \
+  ../lib/include/srsran/interfaces/ue_pdcp_interfaces.h \
+  ../lib/include/srsran/interfaces/pdcp_interface_types.h \
+  ../lib/include/srsran/srslog/event_trace.h
 
 lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_lte.cc.o: ../lib/src/rlc/rlc_am_lte.cc \
   /usr/include/stdc-predef.h \
@@ -5950,13 +5940,13 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_nr.cc.o: ../lib/src/rlc/rlc_um_nr.c
 
 ../lib/src/rlc/rlc_am_nr_packing.cc:
 
-../lib/include/srsran/common/standard_streams.h:
-
 ../lib/src/rlc/rlc_am_nr.cc:
 
 ../lib/src/rlc/rlc_am_lte_packing.cc:
 
 ../lib/include/srsran/srslog/event_trace.h:
+
+../lib/include/srsran/common/standard_streams.h:
 
 ../lib/src/rlc/rlc_am_base.cc:
 

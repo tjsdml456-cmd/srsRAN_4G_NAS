@@ -76,6 +76,9 @@ public:
   /// Called by MAC when an UL grant is received
   void new_grant_ul(uint32_t grant_size);
 
+  /// Force Regular BSR (+ SR) e.g. on DSCP phase change
+  void trigger_regular();
+
   /// MUX interface for BSR generation
   srsran::mac_sch_subpdu_nr::lcg_bsr_t generate_sbsr();
   void                                 set_padding_bytes(uint32_t nof_bytes);
@@ -120,3 +123,4 @@ private:
 } // namespace srsue
 
 #endif // SRSUE_PROC_BSR_NR_H
+

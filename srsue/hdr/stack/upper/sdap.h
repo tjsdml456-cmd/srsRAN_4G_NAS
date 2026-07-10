@@ -34,6 +34,10 @@ namespace srsue {
 class sdap final : public sdap_interface_pdcp_nr, public sdap_interface_gw_nr, public sdap_interface_rrc
 {
 public:
+  static constexpr uint8_t  DSCP_UNSET             = 0xFF;
+  /// Ignore tiny UL packets (e.g. iperf control) for DSCP phase change / BSR+SR.
+  static constexpr uint32_t MIN_DSCP_PHASE_BYTES = 64;
+
   explicit sdap(const char* logname);
   bool init(pdcp_interface_sdap_nr* pdcp_, srsue::gw_interface_pdcp* gw_);
   void stop();
@@ -56,6 +60,8 @@ private:
 
   // configuration
   std::array<sdap_interface_rrc::bearer_cfg_t, srsran::MAX_NR_NOF_BEARERS> bearers = {};
+  // DSCP value of the current traffic phase; matching packets use the RLC priority queue
+  std::array<uint8_t, srsran::MAX_NR_NOF_BEARERS> priority_dscp = {};
 
   srslog::basic_logger& logger;
 };
@@ -63,3 +69,4 @@ private:
 } // namespace srsue
 
 #endif // SRSUE_SDAP_H
+
