@@ -69,7 +69,7 @@ ue_stack_lte::ue_stack_lte() :
   pdcp(&task_sched, "PDCP"),
   pdcp_nr(&task_sched, "PDCP-NR"),
   sdap("SDAP-NR"),
-  sdap_pdcp(&pdcp_nr, &sdap, &mac_nr),
+  sdap_pdcp(&pdcp_nr, &sdap),
   nas(srslog::fetch_basic_logger("NAS", false), &task_sched),
   nas_5g(srslog::fetch_basic_logger("NAS5G", false), &task_sched),
   thread("STACK"),

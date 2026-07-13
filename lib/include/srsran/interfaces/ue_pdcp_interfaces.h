@@ -78,7 +78,6 @@ public:
     write_sdu(lcid, std::move(pdu));
   }
   virtual void demote_prio_tx_queue(uint32_t lcid) {}
-  virtual void trigger_scheduling_request() {}
 };
 
 // STACK interface for GW (based on EPS-bearer IDs)

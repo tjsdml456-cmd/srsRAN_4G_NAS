@@ -87,14 +87,18 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
       // Do not demote/flush queued SDUs: they already have PDCP SNs. Dropping them
       // creates SN holes and gNB RLC reordering can stall for seconds. Demoting
       // prio→normal also inverts SN order (new prio SN sent before older normal SN).
-      // Keep FIFO in the prio queue; only update phase + ask for UL.
+      // Keep FIFO in the prio queue; only update phase.
+      logger.info("QRT-PROF PHASE_CHANGE %u -> %u lcid=%u len=%u",
+                  priority_dscp[lcid],
+                  dscp,
+                  lcid,
+                  pdu->N_bytes);
       logger.info("DSCP phase change %u -> %u on lcid=%u (len=%u)",
                   priority_dscp[lcid],
                   dscp,
                   lcid,
                   pdu->N_bytes);
       priority_dscp[lcid] = dscp;
-      m_pdcp->trigger_scheduling_request();
     }
     use_priority = (priority_dscp[lcid] != DSCP_UNSET && dscp == priority_dscp[lcid]);
   }

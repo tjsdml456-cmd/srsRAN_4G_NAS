@@ -298,10 +298,16 @@ int rlc_am::rlc_am_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
 
   uint32_t sdu_pdcp_sn = sdu->md.pdcp_sn;
 
-  uint8_t*                                 msg_ptr   = sdu->msg;
-  uint32_t                                 nof_bytes = sdu->N_bytes;
-  srsran::error_type<unique_byte_buffer_t> ret       = prio_tx_sdu_queue.try_write(std::move(sdu));
+  uint8_t* msg_ptr          = sdu->msg;
+  uint32_t nof_bytes        = sdu->N_bytes;
+  int64_t  stack_us_to_rlc  = sdu->get_latency_us().count(); // GW TUN → RLC enqueue
+  srsran::error_type<unique_byte_buffer_t> ret = prio_tx_sdu_queue.try_write(std::move(sdu));
   if (ret) {
+    RlcInfo("QRT-PROF ENQUEUE prio PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
+            sdu_pdcp_sn,
+            nof_bytes,
+            prio_tx_sdu_queue.size(),
+            (long)stack_us_to_rlc);
     RlcHexInfo(msg_ptr,
                nof_bytes,
                "Tx priority SDU (%d B, PDCP_SN=%ld prio_tx_sdu_queue_len=%d)",
@@ -349,11 +355,12 @@ unique_byte_buffer_t rlc_am::rlc_am_base_tx::read_next_tx_sdu()
       sdu = prio_tx_sdu_queue.read();
     } while (sdu == nullptr && prio_tx_sdu_queue.size() != 0);
     if (sdu != nullptr) {
-      RlcDebug("Dequeue priority SDU (%d B, PDCP_SN=%ld), prio_len=%u, normal_len=%u",
-              sdu->N_bytes,
+      // latency_us: GW TUN ingress → RLC dequeue for MAC (queue wait dominates QRT)
+      RlcInfo("QRT-PROF DEQUEUE prio PDCP_SN=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
               sdu->md.pdcp_sn,
+              sdu->N_bytes,
               prio_tx_sdu_queue.size(),
-              tx_sdu_queue.size());
+              (long)sdu->get_latency_us().count());
       return sdu;
     }
   }
@@ -361,11 +368,11 @@ unique_byte_buffer_t rlc_am::rlc_am_base_tx::read_next_tx_sdu()
     sdu = tx_sdu_queue.read();
   } while (sdu == nullptr && tx_sdu_queue.size() != 0);
   if (sdu != nullptr) {
-    RlcDebug("Dequeue normal SDU (%d B, PDCP_SN=%ld), prio_len=%u, normal_len=%u",
-            sdu->N_bytes,
+    RlcInfo("QRT-PROF DEQUEUE normal PDCP_SN=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
             sdu->md.pdcp_sn,
-            prio_tx_sdu_queue.size(),
-            tx_sdu_queue.size());
+            sdu->N_bytes,
+            tx_sdu_queue.size(),
+            (long)sdu->get_latency_us().count());
   }
   return sdu;
 }

@@ -108,9 +108,6 @@ public:
   /// procedure sr nr interface
   void start_ra() { proc_ra.start_by_mac(); }
 
-  /// Force Regular BSR + SR (e.g. DSCP phase change needs UL ASAP)
-  void trigger_scheduling_request() { proc_bsr.trigger_regular(); }
-
   /// Interface for MUX
   srsran::mac_sch_subpdu_nr::lcg_bsr_t generate_sbsr();
   void                                 set_padding_bytes(uint32_t nof_bytes);
