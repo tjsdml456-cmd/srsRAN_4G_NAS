@@ -480,5 +480,6 @@ lib/test/rlc/CMakeFiles/rlc_um_nr_test.dir/rlc_um_nr_test.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_rrc_interfaces.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/rlc_um_base.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/adt/accumulators.h \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_lifo_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/block_queue.h

@@ -301,9 +301,10 @@ int rlc_am::rlc_am_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
   uint8_t* msg_ptr          = sdu->msg;
   uint32_t nof_bytes        = sdu->N_bytes;
   int64_t  stack_us_to_rlc  = sdu->get_latency_us().count(); // GW TUN → RLC enqueue
+  // prio_tx_sdu_queue is LIFO (push_front / pop_front).
   srsran::error_type<unique_byte_buffer_t> ret = prio_tx_sdu_queue.try_write(std::move(sdu));
   if (ret) {
-    RlcInfo("QRT-PROF ENQUEUE prio PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
+    RlcInfo("QRT-PROF ENQUEUE prio(LIFO) PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
             sdu_pdcp_sn,
             nof_bytes,
             prio_tx_sdu_queue.size(),

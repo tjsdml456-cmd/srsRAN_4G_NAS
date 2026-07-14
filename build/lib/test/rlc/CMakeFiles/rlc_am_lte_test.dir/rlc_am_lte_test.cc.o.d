@@ -477,6 +477,7 @@ lib/test/rlc/CMakeFiles/rlc_am_lte_test.dir/rlc_am_lte_test.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/bearer_mem_pool.h \
  /usr/include/c++/11/list /usr/include/c++/11/bits/stl_list.h \
  /usr/include/c++/11/bits/list.tcc \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_lifo_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/block_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/rlc_am_data_structs.h \

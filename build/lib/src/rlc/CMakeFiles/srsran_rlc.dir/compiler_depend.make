@@ -1098,7 +1098,6 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc.cc.o: ../lib/src/rlc/rlc.cc \
   ../lib/include/srsran/rlc/rlc_am_base.h \
   ../lib/include/srsran/common/timers.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
-  ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/rlc/rlc_tm.h \
   ../lib/include/srsran/rlc/rlc_um_lte.h \
   ../lib/include/srsran/rlc/rlc_um_base.h \

@@ -155,6 +155,16 @@ public:
     count++;
   }
 
+  // Insert at the read end so the next pop() returns this element (LIFO vs push()).
+  template <typename U>
+  typename std::enable_if<std::is_constructible<T, U>::value>::type push_front(U&& t)
+  {
+    srsran_assert(not full(), "Circular buffer is full.");
+    rpos = (rpos + max_size() - 1) % max_size();
+    buffer[rpos].emplace(std::forward<U>(t));
+    count++;
+  }
+
   bool try_push(T&& t)
   {
     if (full()) {
@@ -170,6 +180,24 @@ public:
       return false;
     }
     push(t);
+    return true;
+  }
+
+  bool try_push_front(T&& t)
+  {
+    if (full()) {
+      return false;
+    }
+    push_front(std::move(t));
+    return true;
+  }
+
+  bool try_push_front(const T& t)
+  {
+    if (full()) {
+      return false;
+    }
+    push_front(t);
     return true;
   }
   void pop()
@@ -290,6 +318,10 @@ public:
   srsran::error_type<T> try_push(T&& t) { return push_(std::move(t), false); }
   bool                  push_blocking(const T& t) { return push_(t, true); }
   srsran::error_type<T> push_blocking(T&& t) { return push_(std::move(t), true); }
+  bool                  try_push_front(const T& t) { return push_front_(t, false); }
+  srsran::error_type<T> try_push_front(T&& t) { return push_front_(std::move(t), false); }
+  bool                  push_front_blocking(const T& t) { return push_front_(t, true); }
+  srsran::error_type<T> push_front_blocking(T&& t) { return push_front_(std::move(t), true); }
   bool                  try_pop(T& obj) { return pop_(obj, false); }
   T                     pop_blocking(bool* success = nullptr)
   {
@@ -409,6 +441,57 @@ protected:
     }
     push_func(t);
     circ_buffer.push(std::move(t));
+    lock.unlock();
+    cvar_empty.notify_one();
+    return {};
+  }
+
+  bool push_front_(const T& t, bool block_mode)
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (not active) {
+      return false;
+    }
+    if (circ_buffer.full()) {
+      if (not block_mode) {
+        return false;
+      }
+      nof_waiting++;
+      while (circ_buffer.full() and active) {
+        cvar_full.wait(lock);
+      }
+      nof_waiting--;
+      if (not active) {
+        return false;
+      }
+    }
+    push_func(t);
+    circ_buffer.push_front(t);
+    lock.unlock();
+    cvar_empty.notify_one();
+    return true;
+  }
+  srsran::error_type<T> push_front_(T&& t, bool block_mode)
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (not active) {
+      return std::move(t);
+    }
+    if (circ_buffer.full()) {
+      if (not block_mode) {
+        return std::move(t);
+      }
+      nof_waiting++;
+      while (circ_buffer.full() and active) {
+        cvar_full.wait(lock);
+      }
+      nof_waiting--;
+      if (not active) {
+        return std::move(t);
+      }
+    }
+    push_func(t);
+    circ_buffer.push_front(std::move(t));
     lock.unlock();
     cvar_empty.notify_one();
     return {};
@@ -607,3 +690,4 @@ public:
 } // namespace srsran
 
 #endif // SRSRAN_CIRCULAR_BUFFER_H
+

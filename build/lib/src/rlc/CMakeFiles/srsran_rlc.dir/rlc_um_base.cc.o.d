@@ -455,6 +455,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_base.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/rlc_metrics.h \
  /usr/include/c++/11/iostream /usr/include/c++/11/list \
  /usr/include/c++/11/bits/stl_list.h /usr/include/c++/11/bits/list.tcc \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_lifo_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/block_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_rrc_interfaces.h \

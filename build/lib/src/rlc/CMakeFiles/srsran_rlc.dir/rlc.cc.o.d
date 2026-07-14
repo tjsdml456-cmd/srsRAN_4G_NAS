@@ -468,6 +468,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/rwlock_guard.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/rlc_am_base.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/timers.h \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_lifo_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/upper/byte_buffer_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/block_queue.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/rlc/rlc_tm.h \

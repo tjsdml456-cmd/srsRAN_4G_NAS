@@ -307,7 +307,7 @@ void rlc_um_base::rlc_um_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
   if (sdu) {
     RlcHexInfo(sdu->msg,
                sdu->N_bytes,
-               "Tx priority SDU (%d B, prio_tx_sdu_queue_len=%d)",
+               "Tx priority SDU LIFO (%d B, prio_tx_sdu_queue_len=%d)",
                sdu->N_bytes,
                prio_tx_sdu_queue.size());
     prio_tx_sdu_queue.write(std::move(sdu));
@@ -321,11 +321,12 @@ int rlc_um_base::rlc_um_base_tx::try_write_sdu_priority(unique_byte_buffer_t sdu
   if (sdu) {
     uint8_t*                                 msg_ptr   = sdu->msg;
     uint32_t                                 nof_bytes = sdu->N_bytes;
+    // prio_tx_sdu_queue is LIFO (push_front / pop_front).
     srsran::error_type<unique_byte_buffer_t> ret       = prio_tx_sdu_queue.try_write(std::move(sdu));
     if (ret) {
       RlcHexInfo(msg_ptr,
                  nof_bytes,
-                 "Tx priority SDU (%d B, prio_tx_sdu_queue_len=%d)",
+                 "Tx priority SDU LIFO (%d B, prio_tx_sdu_queue_len=%d)",
                  nof_bytes,
                  prio_tx_sdu_queue.size());
       return SRSRAN_SUCCESS;

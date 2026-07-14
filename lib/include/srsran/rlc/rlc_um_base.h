@@ -27,6 +27,7 @@
 #include "srsran/common/common.h"
 #include "srsran/common/task_scheduler.h"
 #include "srsran/rlc/rlc_common.h"
+#include "srsran/upper/byte_buffer_lifo_queue.h"
 #include "srsran/upper/byte_buffer_queue.h"
 #include <map>
 #include <mutex>
@@ -116,8 +117,8 @@ protected:
     rlc_config_t cfg = {};
 
     // TX SDU buffers
-    byte_buffer_queue    tx_sdu_queue;
-    byte_buffer_queue    prio_tx_sdu_queue;
+    byte_buffer_queue      tx_sdu_queue;
+    byte_buffer_lifo_queue prio_tx_sdu_queue; // LIFO: newest priority SDU dequeued first
     unique_byte_buffer_t tx_sdu;
 
     unique_byte_buffer_t read_next_tx_sdu();

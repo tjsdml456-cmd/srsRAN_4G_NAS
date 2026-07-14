@@ -27,6 +27,7 @@
 #include "srsran/common/timers.h"
 #include "srsran/interfaces/ue_rrc_interfaces.h"
 #include "srsran/rlc/rlc_common.h"
+#include "srsran/upper/byte_buffer_lifo_queue.h"
 #include "srsran/upper/byte_buffer_queue.h"
 #include <map>
 #include <mutex>
@@ -166,8 +167,8 @@ public:
     bsr_callback_t bsr_callback;
 
     // Tx SDU buffers
-    byte_buffer_queue tx_sdu_queue;
-    byte_buffer_queue prio_tx_sdu_queue;
+    byte_buffer_queue      tx_sdu_queue;
+    byte_buffer_lifo_queue prio_tx_sdu_queue; // LIFO: newest priority SDU dequeued first
 
     // Mutexes
     std::mutex mutex;
