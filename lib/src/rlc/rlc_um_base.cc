@@ -305,6 +305,14 @@ void rlc_um_base::rlc_um_base_tx::set_bsr_callback(bsr_callback_t callback)
 void rlc_um_base::rlc_um_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
 {
   if (sdu) {
+    uint32_t sdu_pdcp_sn       = sdu->md.pdcp_sn;
+    uint32_t nof_bytes         = sdu->N_bytes;
+    int64_t  stack_us_to_rlc   = sdu->get_latency_us().count();
+    RlcInfo("QRT-PROF ENQUEUE prio(LIFO) PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
+            sdu_pdcp_sn,
+            nof_bytes,
+            prio_tx_sdu_queue.size() + 1,
+            (long)stack_us_to_rlc);
     RlcHexInfo(sdu->msg,
                sdu->N_bytes,
                "Tx priority SDU LIFO (%d B, prio_tx_sdu_queue_len=%d)",
@@ -319,11 +327,18 @@ void rlc_um_base::rlc_um_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
 int rlc_um_base::rlc_um_base_tx::try_write_sdu_priority(unique_byte_buffer_t sdu)
 {
   if (sdu) {
-    uint8_t*                                 msg_ptr   = sdu->msg;
-    uint32_t                                 nof_bytes = sdu->N_bytes;
+    uint8_t*                                 msg_ptr         = sdu->msg;
+    uint32_t                                 nof_bytes       = sdu->N_bytes;
+    uint32_t                                 sdu_pdcp_sn     = sdu->md.pdcp_sn;
+    int64_t                                  stack_us_to_rlc = sdu->get_latency_us().count();
     // prio_tx_sdu_queue is LIFO (push_front / pop_front).
-    srsran::error_type<unique_byte_buffer_t> ret       = prio_tx_sdu_queue.try_write(std::move(sdu));
+    srsran::error_type<unique_byte_buffer_t> ret             = prio_tx_sdu_queue.try_write(std::move(sdu));
     if (ret) {
+      RlcInfo("QRT-PROF ENQUEUE prio(LIFO) PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
+              sdu_pdcp_sn,
+              nof_bytes,
+              prio_tx_sdu_queue.size(),
+              (long)stack_us_to_rlc);
       RlcHexInfo(msg_ptr,
                  nof_bytes,
                  "Tx priority SDU LIFO (%d B, prio_tx_sdu_queue_len=%d)",
@@ -352,10 +367,11 @@ unique_byte_buffer_t rlc_um_base::rlc_um_base_tx::read_next_tx_sdu()
       sdu = prio_tx_sdu_queue.read();
     } while (sdu == nullptr && prio_tx_sdu_queue.size() != 0);
     if (sdu != nullptr) {
-      RlcDebug("Dequeue priority SDU (%d B), prio_len=%u, normal_len=%u",
+      RlcInfo("QRT-PROF DEQUEUE prio PDCP_SN=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
+              sdu->md.pdcp_sn,
               sdu->N_bytes,
               prio_tx_sdu_queue.size(),
-              tx_sdu_queue.size());
+              (long)sdu->get_latency_us().count());
       return sdu;
     }
   }
@@ -363,10 +379,11 @@ unique_byte_buffer_t rlc_um_base::rlc_um_base_tx::read_next_tx_sdu()
     sdu = tx_sdu_queue.read();
   } while (sdu == nullptr && tx_sdu_queue.size() != 0);
   if (sdu != nullptr) {
-    RlcDebug("Dequeue normal SDU (%d B), prio_len=%u, normal_len=%u",
+    RlcInfo("QRT-PROF DEQUEUE normal PDCP_SN=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
+            sdu->md.pdcp_sn,
             sdu->N_bytes,
-            prio_tx_sdu_queue.size(),
-            tx_sdu_queue.size());
+            tx_sdu_queue.size(),
+            (long)sdu->get_latency_us().count());
   }
   return sdu;
 }
