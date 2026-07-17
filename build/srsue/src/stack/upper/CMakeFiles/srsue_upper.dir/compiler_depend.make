@@ -3756,6 +3756,8 @@ srsue/src/stack/upper/CMakeFiles/srsue_upper.dir/sdap.cc.o: ../srsue/src/stack/u
   /usr/include/c++/11/bits/this_thread_sleep.h \
   ../lib/include/srsran/common/common.h \
   ../lib/include/srsran/common/common_nr.h \
+  ../lib/include/srsran/common/tti_point.h \
+  ../lib/include/srsran/adt/interval.h \
   ../lib/include/srsran/interfaces/ue_gw_interfaces.h \
   ../lib/include/srsran/asn1/liblte_mme.h \
   ../lib/include/srsran/asn1/liblte_common.h \

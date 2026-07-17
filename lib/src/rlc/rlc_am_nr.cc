@@ -102,7 +102,7 @@ bool rlc_am_nr_tx::configure(const rlc_config_t& cfg_)
 bool rlc_am_nr_tx::has_data()
 {
   return do_status() ||                                         // if we have a status PDU to transmit
-         tx_sdu_queue.get_n_sdus() != 0 || prio_tx_sdu_queue.get_n_sdus() != 0 || !retx_queue.empty();
+         tx_sdu_queue.get_n_sdus() != 0 || !prio_tx_sdu_queue.is_empty() || !retx_queue.empty();
 }
 
 /**
@@ -1099,7 +1099,7 @@ void rlc_am_nr_tx::get_buffer_state(uint32_t& n_bytes_new, uint32_t& n_bytes_pri
     }
   }
 
-  // Bytes needed for tx SDUs in queue
+  // Bytes needed for tx SDUs (all SDUs, including held)
   uint32_t n_sdus = tx_sdu_queue.get_n_sdus() + prio_tx_sdu_queue.get_n_sdus();
   n_bytes_new += tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
 

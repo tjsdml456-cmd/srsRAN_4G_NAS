@@ -1194,6 +1194,7 @@ void ttcn3_syssim::write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu)
 }
 
 void ttcn3_syssim::demote_prio_tx_queue(uint32_t lcid) {}
+void ttcn3_syssim::set_prio_tx_phase(uint32_t lcid, uint8_t dscp) {}
 
 void ttcn3_syssim::discard_sdu(uint32_t lcid, uint32_t sn) {}
 

@@ -49,6 +49,7 @@ public:
   void write_sdu(uint32_t lcid, unique_byte_buffer_t sdu, int sn = -1) override;
   void write_sdu_priority(uint32_t lcid, unique_byte_buffer_t sdu, int sn = -1);
   void demote_prio_tx_queue(uint32_t lcid);
+  void set_prio_tx_phase(uint32_t lcid, uint8_t dscp);
   void write_sdu_mch(uint32_t lcid, unique_byte_buffer_t sdu);
   int  add_bearer(uint32_t lcid, const pdcp_config_t& cnfg) override;
   void add_bearer_mrb(uint32_t lcid, const pdcp_config_t& cnfg);

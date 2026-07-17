@@ -382,6 +382,7 @@
 /usr/local/include/srsran/rlc/rlc_um_lte.h
 /usr/local/include/srsran/rlc/rlc_am_data_structs.h
 /usr/local/include/srsran/upper/pdcp_metrics.h
+/usr/local/include/srsran/upper/byte_buffer_lifo_queue.h
 /usr/local/include/srsran/upper/pdcp_entity_nr.h
 /usr/local/include/srsran/upper/ipv6.h
 /usr/local/include/srsran/upper/byte_buffer_queue.h

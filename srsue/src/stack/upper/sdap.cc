@@ -32,10 +32,13 @@ sdap::sdap(const char* logname) : logger(srslog::fetch_basic_logger(logname))
   priority_dscp.fill(DSCP_UNSET);
 }
 
-bool sdap::init(pdcp_interface_sdap_nr* pdcp_, srsue::gw_interface_pdcp* gw_)
+bool sdap::init(pdcp_interface_sdap_nr*                pdcp_,
+                srsue::gw_interface_pdcp*              gw_,
+                std::function<srsran::tti_point()> get_tti_)
 {
-  m_pdcp = pdcp_;
-  m_gw   = gw_;
+  m_pdcp   = pdcp_;
+  m_gw     = gw_;
+  get_tti  = std::move(get_tti_);
   logger.set_level(srslog::basic_levels::info);
 
   running = true;
@@ -81,24 +84,40 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
     if (priority_dscp[lcid] == DSCP_UNSET) {
       // Only lock the initial phase on a real data-sized packet.
       if (pdu->N_bytes >= MIN_DSCP_PHASE_BYTES) {
+        const srsran::tti_point tti = get_tti ? get_tti() : srsran::tti_point{};
+        logger.info("QRT-PROF UE_SDAP_SLOT dscp_old=-1 dscp_new=%u lcid=%u len=%u tti=%u sfn=%u sf=%u",
+                    dscp,
+                    lcid,
+                    pdu->N_bytes,
+                    tti.is_valid() ? tti.to_uint() : 0u,
+                    tti.is_valid() ? tti.sfn() : 0u,
+                    tti.is_valid() ? tti.sf_idx() : 0u);
         priority_dscp[lcid] = dscp;
+        m_pdcp->set_prio_tx_phase(lcid, dscp);
       }
     } else if (dscp != priority_dscp[lcid] && pdu->N_bytes >= MIN_DSCP_PHASE_BYTES) {
-      // Do not demote/flush queued SDUs: they already have PDCP SNs. Dropping them
-      // creates SN holes and gNB RLC reordering can stall for seconds. Demoting
-      // prio→normal also inverts SN order (new prio SN sent before older normal SN).
-      // Keep FIFO in the prio queue; only update phase.
+      // Keep old-phase SDUs held in RLC prio queue; only current phase is dequeued/BSR'd.
+      const srsran::tti_point tti = get_tti ? get_tti() : srsran::tti_point{};
       logger.info("QRT-PROF PHASE_CHANGE %u -> %u lcid=%u len=%u",
                   priority_dscp[lcid],
                   dscp,
                   lcid,
                   pdu->N_bytes);
+      logger.info("QRT-PROF UE_SDAP_SLOT dscp_old=%u dscp_new=%u lcid=%u len=%u tti=%u sfn=%u sf=%u",
+                  priority_dscp[lcid],
+                  dscp,
+                  lcid,
+                  pdu->N_bytes,
+                  tti.is_valid() ? tti.to_uint() : 0u,
+                  tti.is_valid() ? tti.sfn() : 0u,
+                  tti.is_valid() ? tti.sf_idx() : 0u);
       logger.info("DSCP phase change %u -> %u on lcid=%u (len=%u)",
                   priority_dscp[lcid],
                   dscp,
                   lcid,
                   pdu->N_bytes);
       priority_dscp[lcid] = dscp;
+      m_pdcp->set_prio_tx_phase(lcid, dscp);
     }
     use_priority = (priority_dscp[lcid] != DSCP_UNSET && dscp == priority_dscp[lcid]);
   }
@@ -115,6 +134,7 @@ void sdap::write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu)
     }
   }
   if (use_priority) {
+    pdu->md.dscp = dscp;
     m_pdcp->write_sdu_priority(lcid, std::move(pdu));
   } else {
     m_pdcp->write_sdu(lcid, std::move(pdu));

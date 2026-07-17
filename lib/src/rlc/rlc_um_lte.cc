@@ -81,8 +81,8 @@ uint32_t rlc_um_lte::rlc_um_lte_tx::get_buffer_state()
 {
   std::lock_guard<std::mutex> lock(mutex);
 
-  // Bytes needed for tx SDUs
-  uint32_t n_sdus  = tx_sdu_queue.size() + prio_tx_sdu_queue.size();
+  // Bytes needed for tx SDUs (all SDUs, including held)
+  uint32_t n_sdus  = tx_sdu_queue.size() + prio_tx_sdu_queue.get_n_sdus();
   uint32_t n_bytes = tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
   if (tx_sdu) {
     n_sdus++;
@@ -171,7 +171,7 @@ uint32_t rlc_um_lte::rlc_um_lte_tx::build_data_pdu(unique_byte_buffer_t pdu, uin
   }
 
   // Pull SDUs from queue (priority queue first)
-  while (pdu_space > head_len + 1 && (tx_sdu_queue.size() > 0 || prio_tx_sdu_queue.size() > 0)) {
+  while (pdu_space > head_len + 1 && (tx_sdu_queue.size() > 0 || !prio_tx_sdu_queue.is_empty())) {
     RlcDebug("pdu_space=%d, head_len=%d", pdu_space, head_len);
     if (last_li > 0) {
       header.li[header.N_li++] = last_li;

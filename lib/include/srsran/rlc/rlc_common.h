@@ -298,6 +298,7 @@ public:
   virtual void write_sdu(unique_byte_buffer_t sdu) = 0;
   virtual void write_sdu_priority(unique_byte_buffer_t sdu) { write_sdu(std::move(sdu)); }
   virtual void demote_prio_tx_queue() {}
+  virtual void set_prio_tx_phase(uint8_t dscp) {}
   virtual void discard_sdu(uint32_t discard_sn)    = 0;
   virtual bool sdu_queue_is_full()                 = 0;
 

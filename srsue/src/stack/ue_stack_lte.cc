@@ -241,7 +241,7 @@ int ue_stack_lte::init(const stack_args_t& args_)
     pdcp.init(&rlc, &rrc, gw);
   } else {
     pdcp.init(&rlc, &rrc, &sdap_pdcp);
-    sdap.init(&sdap_pdcp, gw);
+    sdap.init(&sdap_pdcp, gw, [this]() { return get_current_tti(); });
   }
 
   mac_nr_args_t mac_nr_args = {};
@@ -263,7 +263,7 @@ int ue_stack_lte::init(const stack_args_t& args_)
   rrc.init(phy, &mac, &rlc, &pdcp, &nas, usim.get(), gw, &rrc_nr, args.rrc);
 
   if (args.sa_mode) {
-    nas_5g.init(usim.get(), &rrc_nr, gw, args.nas_5g);
+    nas_5g.init(usim.get(), &rrc_nr, gw, args.nas_5g, [this]() { return get_current_tti(); });
     if (open_nas5g_control_socket() != SRSRAN_SUCCESS) {
       return SRSRAN_ERROR;
     }

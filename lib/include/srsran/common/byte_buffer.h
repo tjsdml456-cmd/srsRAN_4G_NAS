@@ -101,6 +101,7 @@ public:
 
   struct buffer_metadata_t {
     uint32_t            pdcp_sn = 0;
+    uint8_t             dscp    = 0xFF; // UL DSCP/phase tag for RLC priority queue
     buffer_latency_calc tp;
   } md;
 
@@ -240,3 +241,4 @@ inline const_byte_span make_span(const unique_byte_buffer_t& b)
 } // namespace srsran
 
 #endif // SRSRAN_BYTE_BUFFER_H
+

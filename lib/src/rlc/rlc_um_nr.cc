@@ -89,7 +89,7 @@ uint32_t rlc_um_nr::rlc_um_nr_tx::get_buffer_state()
 {
   std::lock_guard<std::mutex> lock(mutex);
 
-  // Bytes needed for tx SDUs
+  // Bytes needed for tx SDUs (all SDUs, including held)
   uint32_t n_sdus  = tx_sdu_queue.get_n_sdus() + prio_tx_sdu_queue.get_n_sdus();
   uint32_t n_bytes = tx_sdu_queue.size_bytes() + prio_tx_sdu_queue.size_bytes();
   if (tx_sdu) {

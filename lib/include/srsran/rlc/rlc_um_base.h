@@ -64,6 +64,7 @@ public:
   void write_sdu(unique_byte_buffer_t sdu) override;
   void write_sdu_priority(unique_byte_buffer_t sdu) override;
   void demote_prio_tx_queue() override;
+  void set_prio_tx_phase(uint8_t dscp) override;
   void discard_sdu(uint32_t discard_sn) override;
   bool sdu_queue_is_full();
 
@@ -101,6 +102,7 @@ protected:
     int              try_write_sdu(unique_byte_buffer_t sdu);
     int              try_write_sdu_priority(unique_byte_buffer_t sdu);
     void             demote_prio_tx_to_normal();
+    void             set_prio_tx_phase(uint8_t dscp);
     void             reset_metrics();
     bool             has_data();
     virtual uint32_t get_buffer_state() = 0;

@@ -220,6 +220,14 @@ void rlc::demote_prio_tx_queue(uint32_t lcid)
   }
 }
 
+void rlc::set_prio_tx_phase(uint32_t lcid, uint8_t dscp)
+{
+  if (valid_lcid(lcid)) {
+    rlc_array.at(lcid)->set_prio_tx_phase(dscp);
+    update_bsr(lcid);
+  }
+}
+
 void rlc::write_sdu_mch(uint32_t lcid, unique_byte_buffer_t sdu)
 {
   if (valid_lcid_mrb(lcid)) {

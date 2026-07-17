@@ -172,15 +172,17 @@ void nas_5g::stop()
   running = false;
 }
 
-int nas_5g::init(usim_interface_nas*      usim_,
-                 rrc_nr_interface_nas_5g* rrc_nr_,
-                 gw_interface_nas*        gw_,
-                 const nas_5g_args_t&     cfg_)
+int nas_5g::init(usim_interface_nas*                usim_,
+                 rrc_nr_interface_nas_5g*           rrc_nr_,
+                 gw_interface_nas*                  gw_,
+                 const nas_5g_args_t&               cfg_,
+                 std::function<srsran::tti_point()> get_tti_)
 {
-  usim   = usim_;
-  rrc_nr = rrc_nr_;
-  gw     = gw_;
-  cfg    = cfg_;
+  usim    = usim_;
+  rrc_nr  = rrc_nr_;
+  gw      = gw_;
+  cfg     = cfg_;
+  get_tti = std::move(get_tti_);
 
   // parse and sanity check EIA list
   if (parse_security_algorithm_list(cfg_.ia5g, ia5g_caps) != SRSRAN_SUCCESS) {
@@ -846,6 +848,18 @@ int nas_5g::send_pdu_session_modification_request(uint16_t pdu_session_id,
               static_cast<unsigned>(five_qi),
               static_cast<unsigned>(pdu_session_id),
               static_cast<unsigned>(qos_flow_id));
+  // Field names match DSCP QRT logs (dscp_* holds 5QI) so extract_qrt_ue_sdap_slot.py works.
+  {
+    const srsran::tti_point tti = get_tti ? get_tti() : srsran::tti_point{};
+    logger.info("QRT-PROF UE_SDAP_SLOT dscp_old=%d dscp_new=%u lcid=%u len=0 tti=%u sfn=%u sf=%u",
+                last_five_qi,
+                static_cast<unsigned>(five_qi),
+                static_cast<unsigned>(pdu_session_id),
+                tti.is_valid() ? tti.to_uint() : 0u,
+                tti.is_valid() ? tti.sfn() : 0u,
+                tti.is_valid() ? tti.sf_idx() : 0u);
+    last_five_qi = static_cast<int>(five_qi);
+  }
   rrc_nr->write_sdu(std::move(pdu));
   ctxt_base.tx_count++;
 

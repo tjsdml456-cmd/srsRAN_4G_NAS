@@ -544,6 +544,7 @@ lib/test/rlc/CMakeFiles/rlc_um_nr_test.dir/rlc_um_nr_test.cc.o: ../lib/test/rlc/
   ../lib/include/srsran/interfaces/ue_rrc_interfaces.h \
   ../lib/include/srsran/rlc/rlc_um_base.h \
   ../lib/include/srsran/adt/accumulators.h \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h
 
@@ -901,6 +902,8 @@ lib/test/rlc/CMakeFiles/rlc_um_nr_test.dir/rlc_um_nr_test.cc.o: ../lib/test/rlc/
 /usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
+
+../lib/include/srsran/upper/byte_buffer_lifo_queue.h:
 
 /usr/include/unistd.h:
 

@@ -302,6 +302,8 @@ srsue/src/stack/upper/CMakeFiles/srsue_upper.dir/nas_5g_procedures.cc.o: \
  /usr/include/x86_64-linux-gnu/bits/timerfd.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/timers.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/adt/intrusive_list.h \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/tti_point.h \
+ /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/adt/interval.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_gw_interfaces.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_nas_interfaces.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/rrc_interface_types.h \
@@ -477,8 +479,6 @@ srsue/src/stack/upper/CMakeFiles/srsue_upper.dir/nas_5g_procedures.cc.o: \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/rrc_interface_types.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/asn1/rrc_nr.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/asn1/asn1_utils.h \
- /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/common/tti_point.h \
- /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/adt/interval.h \
  /home/user/srsRAN_main/srsRAN_4G/lib/include/srsran/interfaces/ue_usim_interfaces.h \
  /home/user/srsRAN_main/srsRAN_4G/srsue/hdr/stack/upper/nas_5g_metrics.h \
  /home/user/srsRAN_main/srsRAN_4G/srsue/hdr/stack/upper/nas_5gmm_state.h \

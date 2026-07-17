@@ -58,6 +58,9 @@ public:
   ///< Move all priority-queue SDUs back to the normal TX queue (DSCP phase rollover)
   virtual void demote_prio_tx_queue(uint32_t lcid) = 0;
 
+  ///< Only dequeue/BSR-count prio SDUs tagged with this DSCP phase
+  virtual void set_prio_tx_phase(uint32_t lcid, uint8_t dscp) = 0;
+
   ///< Indicate RLC that a certain SN can be discarded
   virtual void discard_sdu(uint32_t lcid, uint32_t discard_sn) = 0;
 

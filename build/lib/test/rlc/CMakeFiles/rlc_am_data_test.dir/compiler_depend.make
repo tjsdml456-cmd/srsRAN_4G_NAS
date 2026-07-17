@@ -536,6 +536,7 @@ lib/test/rlc/CMakeFiles/rlc_am_data_test.dir/rlc_am_data_test.cc.o: ../lib/test/
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/rlc/rlc_am_data_structs.h \
@@ -1004,6 +1005,8 @@ lib/include/srsran/version.h:
 /usr/include/wchar.h:
 
 /usr/include/c++/11/bits/cxxabi_init_exception.h:
+
+../lib/include/srsran/upper/byte_buffer_lifo_queue.h:
 
 /usr/include/unistd.h:
 

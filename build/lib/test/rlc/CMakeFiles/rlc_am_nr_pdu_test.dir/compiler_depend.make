@@ -552,6 +552,7 @@ lib/test/rlc/CMakeFiles/rlc_am_nr_pdu_test.dir/rlc_am_nr_pdu_test.cc.o: ../lib/t
   /usr/include/c++/11/bits/quoted_string.h \
   ../lib/include/srsran/rlc/rlc_am_base.h \
   ../lib/include/srsran/common/timers.h \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   /usr/include/c++/11/set \
@@ -1025,6 +1026,8 @@ lib/include/srsran/version.h:
 /usr/include/wchar.h:
 
 /usr/include/c++/11/bits/cxxabi_init_exception.h:
+
+../lib/include/srsran/upper/byte_buffer_lifo_queue.h:
 
 /usr/include/unistd.h:
 

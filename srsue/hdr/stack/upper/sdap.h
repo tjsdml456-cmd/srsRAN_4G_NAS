@@ -25,9 +25,11 @@
 #include "srsran/common/buffer_pool.h"
 #include "srsran/common/common.h"
 #include "srsran/common/common_nr.h"
+#include "srsran/common/tti_point.h"
 #include "srsran/interfaces/ue_gw_interfaces.h"
 #include "srsran/interfaces/ue_pdcp_interfaces.h"
 #include "srsran/interfaces/ue_sdap_interfaces.h"
+#include <functional>
 
 namespace srsue {
 
@@ -39,7 +41,9 @@ public:
   static constexpr uint32_t MIN_DSCP_PHASE_BYTES = 64;
 
   explicit sdap(const char* logname);
-  bool init(pdcp_interface_sdap_nr* pdcp_, srsue::gw_interface_pdcp* gw_);
+  bool init(pdcp_interface_sdap_nr*                pdcp_,
+            srsue::gw_interface_pdcp*              gw_,
+            std::function<srsran::tti_point()> get_tti_ = {});
   void stop();
 
   // Interface for GW
@@ -52,8 +56,9 @@ public:
   bool set_bearer_cfg(uint32_t lcid, const sdap_interface_rrc::bearer_cfg_t& cfg) final;
 
 private:
-  pdcp_interface_sdap_nr* m_pdcp = nullptr;
-  gw_interface_pdcp*      m_gw   = nullptr;
+  pdcp_interface_sdap_nr*              m_pdcp = nullptr;
+  gw_interface_pdcp*                   m_gw   = nullptr;
+  std::function<srsran::tti_point()> get_tti;
 
   // state
   bool running = false;

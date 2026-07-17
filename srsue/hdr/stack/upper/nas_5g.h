@@ -31,6 +31,7 @@
 #include "srsran/common/security.h"
 #include "srsran/common/stack_procedure.h"
 #include "srsran/common/task_scheduler.h"
+#include "srsran/common/tti_point.h"
 #include "srsran/interfaces/ue_gw_interfaces.h"
 #include "srsran/interfaces/ue_nas_interfaces.h"
 #include "srsran/interfaces/ue_rrc_interfaces.h"
@@ -39,6 +40,7 @@
 #include "srsue/hdr/stack/upper/nas_5g_metrics.h"
 #include "srsue/hdr/stack/upper/nas_5gmm_state.h"
 #include "srsue/hdr/stack/upper/nas_config.h"
+#include <functional>
 
 using srsran::byte_buffer_t;
 
@@ -58,10 +60,11 @@ class nas_5g : public nas_base, public nas_5g_interface_rrc_nr, public nas_5g_in
 public:
   explicit nas_5g(srslog::basic_logger& logger_, srsran::task_sched_handle task_sched_);
   virtual ~nas_5g();
-  int  init(usim_interface_nas*      usim_,
-            rrc_nr_interface_nas_5g* rrc_nr_,
-            gw_interface_nas*        gw_,
-            const nas_5g_args_t&     cfg_);
+  int  init(usim_interface_nas*                usim_,
+            rrc_nr_interface_nas_5g*           rrc_nr_,
+            gw_interface_nas*                  gw_,
+            const nas_5g_args_t&               cfg_,
+            std::function<srsran::tti_point()> get_tti_ = {});
   void stop();
   void run_tti();
 
@@ -96,9 +99,12 @@ public:
   void get_metrics(nas_5g_metrics_t& metrics);
 
 private:
-  rrc_nr_interface_nas_5g* rrc_nr = nullptr;
-  usim_interface_nas*      usim   = nullptr;
-  gw_interface_nas*        gw     = nullptr;
+  rrc_nr_interface_nas_5g*             rrc_nr = nullptr;
+  usim_interface_nas*                  usim   = nullptr;
+  gw_interface_nas*                    gw     = nullptr;
+  std::function<srsran::tti_point()> get_tti;
+  /// Last 5QI sent in a PDU Session Modification Request (for QRT-PROF old/new).
+  int last_five_qi = -1;
 
   bool                                             running             = false;
   bool                                             has_sec_ctxt        = false;
@@ -220,3 +226,4 @@ private:
 };
 } // namespace srsue
 #endif
+

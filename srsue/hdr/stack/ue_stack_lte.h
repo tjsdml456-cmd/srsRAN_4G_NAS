@@ -71,6 +71,7 @@ public:
   {
     parent_pdcp->write_sdu_priority(lcid, std::move(pdu));
   }
+  void set_prio_tx_phase(uint32_t lcid, uint8_t dscp) final { parent_pdcp->set_prio_tx_phase(lcid, dscp); }
   void demote_prio_tx_queue(uint32_t lcid) final { parent_pdcp->demote_prio_tx_queue(lcid); }
   void write_pdu(uint32_t lcid, srsran::unique_byte_buffer_t pdu) final
   {

@@ -533,6 +533,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/bearer_mem_pool.cc.o: ../lib/src/rlc/beare
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/rlc/rlc_am_data_structs.h \
@@ -1097,7 +1098,9 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc.cc.o: ../lib/src/rlc/rlc.cc \
   ../lib/include/srsran/common/rwlock_guard.h \
   ../lib/include/srsran/rlc/rlc_am_base.h \
   ../lib/include/srsran/common/timers.h \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
+  ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/rlc/rlc_tm.h \
   ../lib/include/srsran/rlc/rlc_um_lte.h \
   ../lib/include/srsran/rlc/rlc_um_base.h \
@@ -1612,6 +1615,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_base.cc.o: ../lib/src/rlc/rlc_am_ba
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   /usr/include/c++/11/queue \
@@ -2193,6 +2197,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_lte.cc.o: ../lib/src/rlc/rlc_am_lte
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/rlc/rlc_am_data_structs.h \
@@ -2736,6 +2741,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_lte_packing.cc.o: ../lib/src/rlc/rl
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   /usr/include/c++/11/queue \
@@ -3258,6 +3264,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_nr.cc.o: ../lib/src/rlc/rlc_am_nr.c
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   /usr/include/c++/11/queue \
@@ -3816,6 +3823,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_am_nr_packing.cc.o: ../lib/src/rlc/rlc
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   /usr/include/c++/11/queue \
@@ -4870,6 +4878,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_base.cc.o: ../lib/src/rlc/rlc_um_ba
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/interfaces/ue_rrc_interfaces.h \
@@ -5399,6 +5408,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_lte.cc.o: ../lib/src/rlc/rlc_um_lte
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/interfaces/ue_pdcp_interfaces.h \
@@ -5933,6 +5943,7 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_nr.cc.o: ../lib/src/rlc/rlc_um_nr.c
   /usr/include/c++/11/list \
   /usr/include/c++/11/bits/stl_list.h \
   /usr/include/c++/11/bits/list.tcc \
+  ../lib/include/srsran/upper/byte_buffer_lifo_queue.h \
   ../lib/include/srsran/upper/byte_buffer_queue.h \
   ../lib/include/srsran/common/block_queue.h \
   ../lib/include/srsran/interfaces/ue_pdcp_interfaces.h \
@@ -6203,6 +6214,10 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_nr.cc.o: ../lib/src/rlc/rlc_um_nr.c
 
 /usr/include/stdint.h:
 
+../lib/include/srsran/interfaces/ue_pdcp_interfaces.h:
+
+/usr/include/c++/11/bits/ptr_traits.h:
+
 /usr/include/c++/11/bits/erase_if.h:
 
 ../lib/include/srsran/phy/phch/pucch.h:
@@ -6448,6 +6463,8 @@ lib/src/rlc/CMakeFiles/srsran_rlc.dir/rlc_um_nr.cc.o: ../lib/src/rlc/rlc_um_nr.c
 /usr/include/c++/11/bits/stl_algobase.h:
 
 /usr/include/unistd.h:
+
+../lib/include/srsran/upper/byte_buffer_lifo_queue.h:
 
 ../lib/src/rlc/rlc.cc:
 
@@ -7000,10 +7017,6 @@ lib/include/srsran/version.h:
 /usr/include/x86_64-linux-gnu/c++/11/bits/gthr.h:
 
 /usr/include/c++/11/bits/list.tcc:
-
-/usr/include/c++/11/bits/ptr_traits.h:
-
-../lib/include/srsran/interfaces/ue_pdcp_interfaces.h:
 
 ../lib/include/srsran/rlc/rlc_am_lte_packing.h:
 

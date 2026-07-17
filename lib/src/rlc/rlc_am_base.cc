@@ -157,6 +157,11 @@ void rlc_am::demote_prio_tx_queue()
   tx_base->demote_prio_tx_to_normal();
 }
 
+void rlc_am::set_prio_tx_phase(uint8_t dscp)
+{
+  tx_base->set_prio_tx_phase(dscp);
+}
+
 void rlc_am::discard_sdu(uint32_t discard_sn)
 {
   tx_base->discard_sdu(discard_sn);
@@ -298,14 +303,15 @@ int rlc_am::rlc_am_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
 
   uint32_t sdu_pdcp_sn = sdu->md.pdcp_sn;
 
-  uint8_t* msg_ptr          = sdu->msg;
-  uint32_t nof_bytes        = sdu->N_bytes;
-  int64_t  stack_us_to_rlc  = sdu->get_latency_us().count(); // GW TUN → RLC enqueue
-  // prio_tx_sdu_queue is LIFO (push_front / pop_front).
-  srsran::error_type<unique_byte_buffer_t> ret = prio_tx_sdu_queue.try_write(std::move(sdu));
-  if (ret) {
-    RlcInfo("QRT-PROF ENQUEUE prio(LIFO) PDCP_SN=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
+  uint8_t* msg_ptr         = sdu->msg;
+  uint32_t nof_bytes       = sdu->N_bytes;
+  uint8_t  sdu_dscp        = sdu->md.dscp;
+  int64_t  stack_us_to_rlc = sdu->get_latency_us().count(); // GW TUN → RLC enqueue
+  // LIFO front + current-phase only on dequeue/BSR.
+  if (prio_tx_sdu_queue.try_write(std::move(sdu))) {
+    RlcInfo("QRT-PROF ENQUEUE prio(LIFO) PDCP_SN=%u dscp=%u bytes=%u qlen=%u gw_to_rlc_us=%ld",
             sdu_pdcp_sn,
+            sdu_dscp,
             nof_bytes,
             prio_tx_sdu_queue.size(),
             (long)stack_us_to_rlc);
@@ -316,10 +322,10 @@ int rlc_am::rlc_am_base_tx::write_sdu_priority(unique_byte_buffer_t sdu)
                sdu_pdcp_sn,
                prio_tx_sdu_queue.size());
   } else {
-    RlcHexWarning(ret.error()->msg,
-                  ret.error()->N_bytes,
+    RlcHexWarning(msg_ptr,
+                  nof_bytes,
                   "[Dropped priority SDU] Tx SDU (%d B, PDCP_SN=%ld, prio_tx_sdu_queue_len=%d)",
-                  ret.error()->N_bytes,
+                  nof_bytes,
                   sdu_pdcp_sn,
                   prio_tx_sdu_queue.size());
     return SRSRAN_ERROR;
@@ -348,22 +354,26 @@ void rlc_am::rlc_am_base_tx::demote_prio_tx_to_normal()
   }
 }
 
+void rlc_am::rlc_am_base_tx::set_prio_tx_phase(uint8_t dscp)
+{
+  std::lock_guard<std::mutex> lock(mutex);
+  prio_tx_sdu_queue.set_current_phase(dscp);
+  RlcInfo("QRT-PROF PHASE_SET dscp=%u prio_qlen=%u",
+          dscp,
+          prio_tx_sdu_queue.size());
+}
+
 unique_byte_buffer_t rlc_am::rlc_am_base_tx::read_next_tx_sdu()
 {
-  unique_byte_buffer_t sdu;
-  if (not prio_tx_sdu_queue.is_empty()) {
-    do {
-      sdu = prio_tx_sdu_queue.read();
-    } while (sdu == nullptr && prio_tx_sdu_queue.size() != 0);
-    if (sdu != nullptr) {
-      // latency_us: GW TUN ingress → RLC dequeue for MAC (queue wait dominates QRT)
-      RlcInfo("QRT-PROF DEQUEUE prio PDCP_SN=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
-              sdu->md.pdcp_sn,
-              sdu->N_bytes,
-              prio_tx_sdu_queue.size(),
-              (long)sdu->get_latency_us().count());
-      return sdu;
-    }
+  unique_byte_buffer_t sdu = prio_tx_sdu_queue.read();
+  if (sdu != nullptr) {
+    RlcInfo("QRT-PROF DEQUEUE prio PDCP_SN=%u dscp=%u bytes=%u qlen_after=%u gw_to_tx_us=%ld",
+            sdu->md.pdcp_sn,
+            sdu->md.dscp,
+            sdu->N_bytes,
+            prio_tx_sdu_queue.size(),
+            (long)sdu->get_latency_us().count());
+    return sdu;
   }
   do {
     sdu = tx_sdu_queue.read();

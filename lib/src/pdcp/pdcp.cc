@@ -117,6 +117,13 @@ void pdcp::demote_prio_tx_queue(uint32_t lcid)
   }
 }
 
+void pdcp::set_prio_tx_phase(uint32_t lcid, uint8_t dscp)
+{
+  if (valid_lcid(lcid)) {
+    rlc->set_prio_tx_phase(lcid, dscp);
+  }
+}
+
 void pdcp::write_sdu_mch(uint32_t lcid, unique_byte_buffer_t sdu)
 {
   if (valid_mch_lcid(lcid)) {

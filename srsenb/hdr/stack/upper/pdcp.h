@@ -85,6 +85,7 @@ private:
     void write_sdu(uint32_t lcid, srsran::unique_byte_buffer_t sdu);
     void write_sdu_priority(uint32_t lcid, srsran::unique_byte_buffer_t sdu);
     void demote_prio_tx_queue(uint32_t lcid);
+    void set_prio_tx_phase(uint32_t lcid, uint8_t dscp) {}
     void discard_sdu(uint32_t lcid, uint32_t discard_sn);
     bool rb_is_um(uint32_t lcid);
     bool sdu_queue_is_full(uint32_t lcid);
